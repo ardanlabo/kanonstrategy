@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<meta name="referrer" content="no-referrer">
+<title>Contact</title>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Serif:wght@300&family=IBM+Plex+Mono:wght@400&family=Inter:wght@300;400&display=swap" rel="stylesheet">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  html, body { height: 100%; }
+
+  body {
+    font-family: 'Inter', -apple-system, sans-serif;
+    background: #0D1117;
+    color: #fff;
+    -webkit-font-smoothing: antialiased;
+    min-height: 100vh;
+    display: flex;
+    align-items: center;
+    padding: 0 10vw;
+  }
+
+  .card {
+    max-width: 400px;
+    width: 100%;
+  }
+
+  /* LOGO */
+  .logo {
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 5px;
+    margin-bottom: 52px;
+  }
+
+  .logo-mark { display: block; }
+
+  .logo-wordmark {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    margin-top: 10px;
+  }
+
+  .logo-kanon {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 13px;
+    letter-spacing: 0.26em;
+    color: #ffffff;
+    text-transform: uppercase;
+  }
+
+  .logo-strategy {
+    font-family: 'Inter', sans-serif;
+    font-weight: 400;
+    font-size: 7px;
+    letter-spacing: 0.44em;
+    color: #6B7280;
+    text-transform: uppercase;
+  }
+
+  /* NAME + TITLE */
+  .name {
+    font-family: 'IBM Plex Serif', serif;
+    font-weight: 300;
+    font-size: 26px;
+    color: #ffffff;
+    letter-spacing: -0.01em;
+    line-height: 1.15;
+    margin-bottom: 8px;
+  }
+
+  .title {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 10px;
+    letter-spacing: 0.16em;
+    color: #A8863A;
+    text-transform: uppercase;
+    margin-bottom: 44px;
+  }
+
+  /* DIVIDER */
+  .rule {
+    width: 24px;
+    height: 1px;
+    background: rgba(201, 168, 76, 0.35);
+    margin-bottom: 32px;
+  }
+
+  /* CONTACTS */
+  .contact-block {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 44px;
+  }
+
+  .contact-row {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+  }
+
+  .contact-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 8px;
+    letter-spacing: 0.14em;
+    color: #A8863A;
+    text-transform: uppercase;
+  }
+
+  .contact-value {
+    font-family: 'Inter', sans-serif;
+    font-weight: 300;
+    font-size: 14px;
+    color: rgba(255, 255, 255, 0.55);
+    text-decoration: none;
+    letter-spacing: 0.01em;
+    transition: color 0.15s;
+  }
+
+  .contact-value:hover { color: rgba(255, 255, 255, 0.85); }
+
+  /* BUTTON */
+  .btn-save {
+    display: inline-block;
+    font-family: 'Inter', sans-serif;
+    font-size: 10px;
+    font-weight: 400;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: #C9A84C;
+    border: 0.5px solid rgba(201, 168, 76, 0.35);
+    padding: 12px 28px;
+    text-decoration: none;
+    background: transparent;
+    transition: background 0.2s, border-color 0.2s;
+    cursor: pointer;
+  }
+
+  .btn-save:hover {
+    background: rgba(201, 168, 76, 0.07);
+    border-color: rgba(201, 168, 76, 0.6);
+  }
+
+  @media (max-width: 600px) {
+    body { padding: 48px 32px; align-items: flex-start; padding-top: 80px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="card">
+
+  <!-- LOGO -->
+  <div class="logo">
+    <svg class="logo-mark" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 120 120" width="48" height="48" fill="none">
+      <circle cx="60" cy="60" r="50" stroke="#C9A84C" stroke-width="2"/>
+      <circle cx="60" cy="60" r="32" stroke="#C9A84C" stroke-width="1.8"/>
+      <circle cx="60" cy="60" r="16" stroke="#C9A84C" stroke-width="1.8"/>
+      <circle cx="60" cy="60" r="4" fill="#C9A84C"/>
+      <circle cx="60"    cy="10"  r="5.5" fill="#C9A84C"/>
+      <circle cx="103.3" cy="85"  r="5.5" fill="#C9A84C"/>
+      <circle cx="16.7"  cy="85"  r="5.5" fill="#C9A84C"/>
+      <circle cx="87.7"  cy="44"  r="4"   fill="#C9A84C"/>
+      <circle cx="60"    cy="92"  r="4"   fill="#C9A84C"/>
+      <circle cx="32.3"  cy="44"  r="4"   fill="#C9A84C"/>
+      <circle cx="60"    cy="44"  r="2.8" fill="#C9A84C"/>
+      <circle cx="73.9"  cy="68"  r="2.8" fill="#C9A84C"/>
+      <circle cx="46.1"  cy="68"  r="2.8" fill="#C9A84C"/>
+    </svg>
+    <div class="logo-wordmark">
+      <span class="logo-kanon">Kanon</span>
+      <span class="logo-strategy">Strategy</span>
+    </div>
+  </div>
+
+  <!-- NAME -->
+  <div class="name">André R. Eylettens</div>
+  <div class="title">Decision Support for Operations</div>
+
+  <div class="rule"></div>
+
+  <!-- CONTACTS -->
+  <div class="contact-block">
+    <div class="contact-row">
+      <span class="contact-label">Email</span>
+      <a href="mailto:andre@kanonstrategy.com" class="contact-value">andre@kanonstrategy.com</a>
+    </div>
+    <div class="contact-row">
+      <span class="contact-label">Tel</span>
+      <a href="tel:+251987039670" class="contact-value">+251 9 87 03 96 70</a>
+    </div>
+    <div class="contact-row">
+      <span class="contact-label">WhatsApp</span>
+      <a href="https://wa.me/33609027128" class="contact-value">+33 6 09 02 71 28</a>
+    </div>
+  </div>
+
+  <!-- CTA -->
+  <a href="andre-eylettens.vcf" download class="btn-save">Save Contact</a>
+
+</div>
+
+</body>
+</html>
