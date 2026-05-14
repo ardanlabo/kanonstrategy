@@ -1,0 +1,899 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+  <!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-4WS62WC0C1"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-4WS62WC0C1');
+</script>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Rhizome — Actor Mapping · Kanon Strategy</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Serif:ital,wght@0,300;0,400;1,300;1,400&family=Inter:wght@300;400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.9.0/d3.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+html,body{height:100%;overflow:hidden;}
+body{font-family:'Inter',system-ui,sans-serif;background:#080c11;color:#fff;-webkit-font-smoothing:antialiased;display:flex;flex-direction:column;}
+.topbar{height:48px;flex-shrink:0;background:#0a0e15;border-bottom:0.5px solid rgba(255,255,255,0.07);display:flex;align-items:center;justify-content:space-between;padding:0 20px;z-index:50;}
+.tl{display:flex;align-items:center;gap:14px;}
+.t-logo{display:flex;align-items:center;gap:10px;}
+.t-sep{width:1px;height:16px;background:rgba(201,168,76,0.25);}
+.t-brand{font-family:'IBM Plex Mono',monospace;font-size:12px;font-weight:500;letter-spacing:0.18em;color:rgba(255,255,255,0.85);}
+.t-div{width:0.5px;height:20px;background:rgba(255,255,255,0.08);}
+.t-product{font-family:'IBM Plex Serif',serif;font-weight:300;font-size:14px;color:rgba(255,255,255,0.55);}
+.t-ctx{font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.18);letter-spacing:0.1em;}
+.t-back{font-family:'Inter',sans-serif;font-size:11px;color:rgba(255,255,255,0.2);text-decoration:none;transition:color .2s;}
+.t-back:hover{color:rgba(201,168,76,0.65);}
+.t-reset{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;padding:5px 14px;cursor:pointer;border:0.5px solid rgba(255,255,255,0.12);background:transparent;color:rgba(255,255,255,0.3);transition:all .2s;display:none;}
+.t-reset.visible{display:block;}
+.t-reset:hover{color:rgba(255,255,255,0.7);border-color:rgba(255,255,255,0.25);}
+.body-wrap{flex:1;display:flex;overflow:hidden;position:relative;}
+.graph-wrap{flex:1;position:relative;overflow:hidden;}
+#svg{width:100%;height:100%;display:block;cursor:default;}
+/* LEGEND — white bg */
+.legend{position:absolute;bottom:38px;right:16px;background:#fff;border:1px solid #e5e7eb;padding:10px 14px;display:flex;flex-direction:row;gap:20px;z-index:10;pointer-events:none;box-shadow:0 2px 8px rgba(0,0,0,.12);}
+.lg-sec{display:flex;flex-direction:column;}
+.lg-title{font-family:'IBM Plex Mono',monospace;font-size:8px;color:#6b7280;letter-spacing:0.12em;text-transform:uppercase;margin-bottom:6px;border-bottom:1px solid #f3f4f6;padding-bottom:3px;}
+.lg-row{display:flex;align-items:center;gap:8px;margin-bottom:4px;}
+.lg-row:last-child{margin-bottom:0;}
+.lg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+.lg-diamond{width:9px;height:9px;border:1.5px solid #ef4444;transform:rotate(45deg);flex-shrink:0;}
+.lg-lbl{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:#374151;}
+.lg-line{width:20px;height:12px;flex-shrink:0;display:flex;align-items:center;}
+.lg-moon{width:8px;height:8px;border-radius:50%;flex-shrink:0;}
+/* TOOLTIP */
+.tooltip{position:absolute;background:rgba(10,14,21,0.95);border:0.5px solid rgba(255,255,255,0.1);border-left:2px solid #C9A84C;padding:8px 12px;font-family:'IBM Plex Mono',monospace;font-size:10px;color:rgba(255,255,255,0.55);pointer-events:none;z-index:40;display:none;max-width:200px;line-height:1.5;}
+.tooltip strong{color:#fff;font-weight:500;}
+/* SIDEBAR */
+.sidebar{position:absolute;top:0;right:0;bottom:0;width:320px;background:#0d1219;border-left:0.5px solid rgba(255,255,255,0.08);border-top:2px solid #C9A84C;display:flex;flex-direction:column;transform:translateX(322px);transition:transform .3s ease;z-index:20;overflow:hidden;}
+.sidebar.open{transform:translateX(0);}
+.sb-hdr{padding:13px 14px 10px;border-bottom:0.5px solid rgba(255,255,255,0.07);display:flex;justify-content:space-between;align-items:flex-start;flex-shrink:0;background:#0a0e15;}
+.sb-close{font-size:14px;color:rgba(255,255,255,0.2);cursor:pointer;transition:color .18s;padding:2px 4px;}
+.sb-close:hover{color:#fff;}
+.sb-badge{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.11em;text-transform:uppercase;padding:2px 7px;display:inline-block;margin-bottom:5px;}
+.sb-name{font-family:'IBM Plex Serif',serif;font-weight:300;font-size:16px;color:#fff;line-height:1.25;}
+.sb-score-row{display:flex;align-items:center;gap:8px;margin-top:5px;}
+.sb-score-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,0.22);}
+.sb-pill{font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;padding:2px 8px;}
+.sb-body{overflow-y:auto;flex:1;}
+.sb-body::-webkit-scrollbar{width:3px;}
+.sb-body::-webkit-scrollbar-thumb{background:rgba(255,255,255,0.1);}
+.sb-sec{padding:10px 14px;border-bottom:0.5px solid rgba(255,255,255,0.05);}
+.sb-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:0.09em;color:rgba(201,168,76,0.45);text-transform:uppercase;margin-bottom:6px;}
+.sb-note{font-family:'Inter',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,0.32);line-height:1.7;}
+.sb-role-desc{font-family:'Inter',sans-serif;font-size:11px;font-weight:300;color:rgba(255,255,255,0.25);line-height:1.65;font-style:italic;}
+.sb-moons{display:flex;flex-wrap:wrap;gap:5px;}
+.sb-moon{display:flex;align-items:center;gap:4px;}
+.sb-moon-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sb-moon-lbl{font-family:'Inter',sans-serif;font-size:10px;color:rgba(255,255,255,0.38);}
+.sb-zones{display:flex;flex-wrap:wrap;gap:4px;}
+.sb-zone{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(201,168,76,0.6);background:rgba(201,168,76,0.07);border:0.5px solid rgba(201,168,76,0.15);padding:2px 6px;}
+.sb-kv{display:flex;flex-direction:column;gap:4px;}
+.sb-kvrow{display:flex;gap:8px;}
+.sb-kvk{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,0.2);min-width:64px;padding-top:2px;flex-shrink:0;}
+.sb-kvv{font-family:'Inter',sans-serif;font-size:11px;color:rgba(255,255,255,0.5);line-height:1.5;}
+.sb-kvv.gold{color:#C9A84C;font-family:'IBM Plex Mono',monospace;font-weight:500;}
+.sb-projects{display:flex;flex-direction:column;gap:6px;}
+.sb-project{background:rgba(255,255,255,0.03);border:0.5px solid rgba(255,255,255,0.06);border-left:2px solid;padding:7px 10px;}
+.sb-pname{font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.7);margin-bottom:2px;}
+.sb-pmeta{font-family:'Inter',sans-serif;font-size:10px;color:rgba(255,255,255,0.25);line-height:1.5;}
+.sb-partners{display:flex;flex-direction:column;gap:3px;}
+.sb-pgroup{margin-bottom:7px;}
+.sb-pgroup-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,0.18);letter-spacing:0.07em;text-transform:uppercase;margin-bottom:4px;}
+.sb-prow{display:flex;align-items:center;gap:7px;padding:3px 0;}
+.sb-pdot{width:7px;height:7px;border-radius:50%;flex-shrink:0;}
+.sb-pname2{font-family:'Inter',sans-serif;font-size:11px;color:rgba(255,255,255,0.48);}
+.sb-prole{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(255,255,255,0.16);margin-left:auto;}
+.sb-gap{background:rgba(239,68,68,0.06);border:0.5px solid rgba(239,68,68,0.18);padding:8px 10px;margin-bottom:4px;}
+.sb-gap-lbl{font-family:'IBM Plex Mono',monospace;font-size:8px;color:rgba(239,68,68,0.65);text-transform:uppercase;letter-spacing:0.08em;margin-bottom:3px;}
+.sb-gap-text{font-family:'Inter',sans-serif;font-size:11px;color:rgba(255,255,255,0.32);line-height:1.6;}
+.sb-contacts{display:flex;flex-direction:column;gap:8px;}
+.sb-cname{font-family:'Inter',sans-serif;font-size:11px;font-weight:500;color:rgba(255,255,255,0.6);}
+.sb-crole{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:rgba(255,255,255,0.22);}
+.sb-cemail{font-family:'IBM Plex Mono',monospace;font-size:8.5px;color:rgba(201,168,76,0.5);}
+/* HINT BAR */
+.hint-bar{position:absolute;bottom:0;left:0;right:0;height:30px;background:rgba(10,14,21,0.7);border-top:0.5px solid rgba(255,255,255,0.05);display:flex;align-items:center;justify-content:center;gap:24px;pointer-events:none;z-index:10;}
+.hint{font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.18);display:flex;align-items:center;gap:6px;}
+.hkey{background:rgba(255,255,255,0.06);border:0.5px solid rgba(255,255,255,0.12);padding:1px 5px;font-size:8px;}
+/* TOUR */
+.tour-overlay{position:fixed;inset:0;z-index:9999;pointer-events:all;display:flex;flex-direction:column;justify-content:flex-end;}
+.tour-bg{position:absolute;inset:0;background:rgba(0,0,0,0.68);}
+.tour-card{position:relative;z-index:1;margin:0 auto 36px;width:620px;max-width:92vw;background:#0c111a;border:0.5px solid rgba(201,168,76,0.3);border-top:2px solid #C9A84C;}
+.tc-hdr{padding:12px 20px 10px;border-bottom:0.5px solid rgba(255,255,255,0.06);display:flex;align-items:center;gap:12px;}
+.tc-step{font-family:'IBM Plex Mono',monospace;font-size:9px;letter-spacing:0.12em;color:rgba(201,168,76,0.5);text-transform:uppercase;}
+.tc-dots{display:flex;gap:5px;margin-left:auto;}
+.tcdot{width:6px;height:6px;border-radius:50%;background:rgba(255,255,255,0.12);cursor:pointer;transition:all .2s;}
+.tcdot.active{background:#C9A84C;}
+.tcdot.done{background:rgba(201,168,76,0.35);}
+.tc-body{padding:16px 20px 12px;}
+.tc-title{font-family:'IBM Plex Serif',Georgia,serif;font-size:17px;font-weight:300;color:#fff;margin-bottom:8px;}
+.tc-text{font-family:'Inter',system-ui,sans-serif;font-size:12px;font-weight:300;color:rgba(255,255,255,0.5);line-height:1.78;}
+.hl{background:rgba(201,168,76,0.12);color:#C9A84C;padding:1px 5px;font-family:'IBM Plex Mono',monospace;font-size:11px;}
+.tc-ftr{padding:9px 20px;border-top:0.5px solid rgba(255,255,255,0.06);display:flex;align-items:center;justify-content:space-between;}
+.tc-ctr{font-family:'IBM Plex Mono',monospace;font-size:9px;color:rgba(255,255,255,0.18);}
+.tc-btns{display:flex;gap:8px;}
+.tc-btn{font-family:'IBM Plex Mono',monospace;font-size:10px;letter-spacing:0.08em;padding:6px 16px;cursor:pointer;border:0.5px solid rgba(255,255,255,0.1);background:transparent;color:rgba(255,255,255,0.3);transition:all .2s;}
+.tc-btn.primary{border-color:rgba(201,168,76,0.4);color:#C9A84C;background:rgba(201,168,76,0.05);}
+.tc-btn.primary:hover{background:rgba(201,168,76,0.1);}
+.tc-btn.unlock{border-color:rgba(34,197,94,0.4);color:#22c55e;background:rgba(34,197,94,0.05);}
+.tc-btn.unlock:hover{background:rgba(34,197,94,0.1);}
+.tc-btn:not(.primary):not(.unlock):hover{color:rgba(255,255,255,0.55);}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <div class="tl">
+    <div class="t-logo">
+      <svg width="20" height="20" viewBox="0 0 120 120" fill="none"><circle cx="60" cy="60" r="50" stroke="#C9A84C" stroke-width="2.5"/><circle cx="60" cy="60" r="32" stroke="#C9A84C" stroke-width="2"/><circle cx="60" cy="60" r="16" stroke="#C9A84C" stroke-width="2"/><circle cx="60" cy="60" r="4" fill="#C9A84C"/><circle cx="60" cy="10" r="5" fill="#C9A84C"/><circle cx="103.3" cy="85" r="5" fill="#C9A84C"/><circle cx="16.7" cy="85" r="5" fill="#C9A84C"/></svg>
+      <div class="t-sep"></div>
+      <span class="t-brand">RHIZOME</span>
+    </div>
+    <div class="t-div"></div>
+    <span class="t-product">Actor Mapping</span>
+    <span class="t-ctx" id="t-ctx">// SOMALI REGION · ETHIOPIA · 2025</span>
+  </div>
+  <div style="display:flex;align-items:center;gap:12px;">
+    <button class="t-reset" id="t-reset" onclick="resetView()">← All actors</button>
+    <a href="index.html" class="t-back">← Back</a>
+  </div>
+</div>
+
+<div class="body-wrap">
+  <div class="graph-wrap">
+    <svg id="svg"></svg>
+
+    <div class="legend">
+      <div class="lg-sec">
+        <div class="lg-title">Actor type</div>
+        <div class="lg-row"><div class="lg-dot" style="background:#f97316"></div><span class="lg-lbl">Government</span></div>
+        <div class="lg-row"><div class="lg-dot" style="background:#a78bfa"></div><span class="lg-lbl">UN Agency</span></div>
+        <div class="lg-row"><div class="lg-dot" style="background:#f59e0b"></div><span class="lg-lbl">Donor</span></div>
+        <div class="lg-row"><div class="lg-dot" style="background:#4a9eff"></div><span class="lg-lbl">INGO</span></div>
+        <div class="lg-row"><div class="lg-dot" style="background:#34d399"></div><span class="lg-lbl">CSO / NNGO</span></div>
+        <div class="lg-row"><div class="lg-dot" style="background:#22c55e"></div><span class="lg-lbl">Cluster</span></div>
+        <div class="lg-row"><div class="lg-diamond"></div><span class="lg-lbl" style="color:#dc2626">ABC Zone gap</span></div>
+      </div>
+      <div class="lg-sec">
+        <div class="lg-title">Connections</div>
+        <div class="lg-row"><div class="lg-line"><svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="#C9A84C" stroke-width="2.5"/></svg></div><span class="lg-lbl">Cluster link</span></div>
+        <div class="lg-row"><div class="lg-line"><svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="#f59e0b" stroke-width="1.5"/></svg></div><span class="lg-lbl">Funding</span></div>
+        <div class="lg-row"><div class="lg-line"><svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="#94a3b8" stroke-width="1.2"/></svg></div><span class="lg-lbl">Consortium</span></div>
+        <div class="lg-row"><div class="lg-line"><svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="#64748b" stroke-width="0.8" stroke-dasharray="4 3"/></svg></div><span class="lg-lbl">Informal</span></div>
+        <div class="lg-row"><div class="lg-line"><svg width="20" height="4"><line x1="0" y1="2" x2="20" y2="2" stroke="#ef4444" stroke-width="1.2" stroke-dasharray="3 2"/></svg></div><span class="lg-lbl">ABC bridge</span></div>
+      </div>
+      <div class="lg-sec">
+        <div class="lg-title">Sector moons</div>
+        <div class="lg-row"><div class="lg-moon" style="background:#22c55e"></div><span class="lg-lbl">Nutrition</span></div>
+        <div class="lg-row"><div class="lg-moon" style="background:#3b82f6"></div><span class="lg-lbl">Protection</span></div>
+        <div class="lg-row"><div class="lg-moon" style="background:#06b6d4"></div><span class="lg-lbl">WASH</span></div>
+        <div class="lg-row"><div class="lg-moon" style="background:#ef4444"></div><span class="lg-lbl">Health</span></div>
+        <div class="lg-row"><div class="lg-moon" style="background:#f97316"></div><span class="lg-lbl">Shelter</span></div>
+        <div class="lg-row"><div class="lg-moon" style="background:#eab308"></div><span class="lg-lbl">Food Security</span></div>
+      </div>
+    </div>
+
+    <div class="sidebar" id="sidebar">
+      <div class="sb-hdr">
+        <div>
+          <div class="sb-badge" id="sb-badge"></div>
+          <div class="sb-name" id="sb-name"></div>
+          <div class="sb-score-row"><span class="sb-score-lbl">Coord. score</span><span class="sb-pill" id="sb-pill"></span></div>
+        </div>
+        <div class="sb-close" onclick="resetView()">✕</div>
+      </div>
+      <div class="sb-body" id="sb-body"></div>
+    </div>
+
+    <div class="tooltip" id="tooltip"></div>
+
+    <div class="hint-bar">
+      <div class="hint"><span class="hkey">hover</span> reveal network</div>
+      <div class="hint"><span class="hkey">click</span> focus actor</div>
+      <div class="hint"><span class="hkey">scroll</span> zoom</div>
+      <div class="hint"><span class="hkey">click bg</span> reset</div>
+    </div>
+  </div>
+</div>
+
+<div class="tour-overlay" id="tour-overlay">
+  <div class="tour-bg"></div>
+  <div class="tour-card">
+    <div class="tc-hdr"><span class="tc-step" id="tc-step"></span><div class="tc-dots" id="tc-dots"></div></div>
+    <div class="tc-body"><div class="tc-title" id="tc-title"></div><div class="tc-text" id="tc-text"></div></div>
+    <div class="tc-ftr"><div class="tc-ctr" id="tc-ctr"></div><div class="tc-btns"><button class="tc-btn" id="tc-prev" onclick="tourPrev()">← Back</button><button class="tc-btn primary" id="tc-next" onclick="tourNext()">Next →</button></div></div>
+  </div>
+</div>
+
+<script>
+const SC={Nutrition:'#22c55e',Protection:'#3b82f6',WASH:'#06b6d4',Health:'#ef4444',Shelter:'#f97316','Food Security':'#eab308',Education:'#8b5cf6',Coordination:'#9ca3af',Logistics:'#6b7280',Livelihoods:'#a16207'};
+const TC={government:'#f97316',un:'#a78bfa',donor:'#f59e0b',ingo:'#4a9eff',nngo:'#34d399',cluster:'#22c55e',abc:'#ef4444'};
+const TL={government:'GOVERNMENT',un:'UN AGENCY',donor:'DONOR',ingo:'INGO',nngo:'CSO / NNGO',cluster:'CLUSTER',abc:'ABC ZONE'};
+const TD={government:'State counterpart — provides authorization, co-leads clusters, manages government response systems.',un:'Cluster Lead Agency — strategic coordination, pipeline management, provider of last resort.',donor:'Institutional funder — finances INGO and NNGO implementing partners on specific sectors.',ingo:'International NGO — direct implementation, leads consortiums, sub-grants to local NNGOs.',nngo:'Local/national CSO — community access, last-mile delivery, sub-partner or direct EHF recipient.',cluster:'Sector coordination forum — convenes all partners, tracks coverage gaps, manages sector response.',abc:'Area-Based Coordination gap — actors co-present in same zone with no inter-cluster mechanism.'};
+function ss(s){return s>=80?'#22c55e':s>=55?'#f59e0b':'#ef4444';}
+
+const ZONES={
+  government:{x0:0.00,y0:0.00,x1:0.28,y1:0.46},
+  un:        {x0:0.28,y0:0.00,x1:0.68,y1:0.46},
+  donor:     {x0:0.68,y0:0.00,x1:1.00,y1:0.46},
+  ingo:      {x0:0.00,y0:0.58,x1:0.52,y1:1.00},
+  nngo:      {x0:0.54,y0:0.58,x1:1.00,y1:1.00},
+  cluster:   {x0:0.10,y0:0.38,x1:0.90,y1:0.60},
+};
+
+const NODES=[
+  {id:'edrmc',name:'EDRMC / ENCU',type:'government',score:74,sectors:['Nutrition','Coordination'],zones:['All Zones'],staff:28,
+   note:'Emergency Nutrition Coordination Unit, housed within EDRMC. Government co-lead of Nutrition Cluster alongside UNICEF. Chairs sub-national RENCU in Somali Region.',
+   contacts:[{name:'Dr. Tigist Bacha',role:'ENCU Director',email:'t.bacha@edrmc.gov.et'}],
+   projects:[{name:'RENCU Somali Region Support 2025',funder:'UNICEF',sectors:['Nutrition'],desc:'Sub-national coordination capacity and CMAM data management across Fafan, Liban, Korahe zones.'}],
+   links:[{to:'unicef',t:'c'},{to:'cl_nut',t:'c'},{to:'ocha',t:'c'}]},
+  {id:'rrhb',name:'Regional Health Bureau',type:'government',score:66,sectors:['Health'],zones:['All Zones'],staff:340,
+   note:'Government co-lead of Health Cluster alongside WHO. Critical for health facility access and drug authorization. SAM/MAM referral pathway to OTP sites a persistent inter-cluster gap.',
+   contacts:[{name:'Dr. Ahmed Hassan',role:'Director General',email:'a.hassan@rrhb.gov.et'}],
+   projects:[{name:'Essential Health Care Package Rollout',funder:'GoE / WHO',sectors:['Health'],desc:'Standardization across 180+ facilities. MHNT integration into routine EHC package.'}],
+   links:[{to:'who',t:'c'},{to:'cl_hlt',t:'c'},{to:'ocha',t:'k'}]},
+  {id:'rrrda',name:'RRRDA Somali',type:'government',score:63,sectors:['Protection','Shelter'],zones:['Dollo Ado','Liban','Korahe'],staff:85,
+   note:'Regional Refugees and Returnees Affairs Authority. Controls access to refugee and IDP sites in Dollo Ado and Liban. Key gatekeeper for UNHCR and shelter actors. No formal link to Nutrition or Health clusters.',
+   contacts:[{name:'Ibrahim Farah',role:'Regional Coordinator',email:'i.farah@rrrda.gov.et'}],
+   projects:[],
+   links:[{to:'unhcr',t:'c'},{to:'iom',t:'c'},{to:'ocha',t:'k'}]},
+  {id:'dppc',name:'DPPC Somali',type:'government',score:60,sectors:['Food Security','Coordination'],zones:['All Zones'],staff:42,
+   note:'Disaster Prevention and Preparedness Commission — Somali Region. Government early warning counterpart. Feeds IPC process. Data sharing with WFP irregular.',
+   contacts:[{name:'Abdullahi Omar',role:'Head of DPPC Somali',email:'a.omar@dppc.gov.et'}],
+   projects:[{name:'IPC Phase Classification 2025',funder:'FAO / WFP',sectors:['Food Security'],desc:'Bi-annual food security situation analysis across all zones.'}],
+   links:[{to:'ocha',t:'k'},{to:'wfp',t:'c'},{to:'fao',t:'c'}]},
+  {id:'ocha',name:'OCHA Ethiopia',type:'un',score:91,sectors:['Coordination'],zones:['All Zones'],staff:18,
+   note:'Humanitarian coordination lead. Manages Ethiopia Humanitarian Fund (EHF) — $62.7M in 2024, 75 projects, 38 partners. Chairs ICCG. Field hub in Jijiga. Leads access negotiations.',
+   contacts:[{name:'Sara Lindqvist',role:'Head of Office',email:'s.lindqvist@un.org'},{name:'Yohannes Tesfaye',role:'IMO',email:'y.tesfaye@un.org'}],
+   projects:[{name:'EHF Standard Allocation 2025-Q1',funder:'EHF Donors',sectors:['Coordination'],desc:'$14.2M rapid response. 22 NGO partners. Priority: Nutrition and WASH in Somali, Afar, Oromia.'}],
+   links:[{to:'unicef',t:'c'},{to:'wfp',t:'c'},{to:'who',t:'c'},{to:'unhcr',t:'c'},{to:'fao',t:'c'},{to:'iom',t:'c'},{to:'cl_nut',t:'c'},{to:'cl_wsh',t:'c'},{to:'cl_hlt',t:'c'},{to:'echo',t:'c'},{to:'edrmc',t:'c'}]},
+  {id:'unicef',name:'UNICEF Ethiopia',type:'un',score:88,sectors:['Nutrition','WASH','Protection'],zones:['Jijiga','Gode','Korahe'],staff:62,
+   note:'Cluster Lead Agency for Nutrition (with EDRMC/ENCU) and WASH. Provider of last resort. RUTF pipeline break ~2 months early 2025 due to US funding freeze. Sub-national RENCU support in Somali Region.',
+   contacts:[{name:'Miriam Osei',role:'Nutrition Specialist / Cluster Support',email:'m.osei@unicef.org'}],
+   projects:[{name:'UNICEF-WFP Joint Nutrition Programme',funder:'UNICEF / WFP',sectors:['Nutrition'],desc:'Integrated SAM/MAM prevention in 100 hotspot woredas. 3-year programme.'},{name:'WASH Emergency Response Somali 2025',funder:'ECHO',sectors:['WASH'],desc:'Borehole rehabilitation, hygiene promotion. 6 woredas in Fafan Zone.'}],
+   links:[{to:'ocha',t:'c'},{to:'edrmc',t:'c'},{to:'acf',t:'c'},{to:'save',t:'c'},{to:'cl_nut',t:'c'},{to:'cl_wsh',t:'c'}]},
+  {id:'wfp',name:'WFP Ethiopia',type:'un',score:86,sectors:['Food Security','Nutrition','Logistics'],zones:['All Zones'],staff:94,
+   note:'Co-lead Food Security Cluster (with FAO). Lead Logistics Cluster. Controls supply corridors Jijiga→Korahe→Liban. 4.6M people reached monthly with food in 2024.',
+   contacts:[{name:'James Kariuki',role:'Country Director',email:'j.kariuki@wfp.org'}],
+   projects:[{name:'GFD Somali Region Lean Season 2025',funder:'US/BHA (pre-freeze)',sectors:['Food Security'],desc:'General food distribution to 1.4M food-insecure people across all zones.'},{name:'Logistics Cluster Air & Road Services',funder:'EHF / ECHO',sectors:['Logistics'],desc:'Humanitarian cargo flights Addis→Dollo Ado, common storage in Jijiga.'}],
+   links:[{to:'ocha',t:'c'},{to:'fao',t:'c'},{to:'save',t:'c'},{to:'concern',t:'c'},{to:'cl_nut',t:'c'},{to:'cl_food',t:'c'}]},
+  {id:'who',name:'WHO Ethiopia',type:'un',score:83,sectors:['Health'],zones:['All Zones'],staff:38,
+   note:'Lead agency Health Cluster, co-leads with RHB. Disease surveillance network. Health Cluster only 24% funded in 2023. Cholera response ongoing since 2022.',
+   contacts:[{name:'Dr. Fatuma Warsame',role:'Health Cluster Coordinator',email:'f.warsame@who.int'}],
+   projects:[{name:'AWD/Cholera Rapid Response 2025',funder:'CERF',sectors:['Health'],desc:'Surveillance and case management for cholera outbreak. Somali and Oromia regions.'},{name:'HeRAMS Facility Assessment BG/Somali',funder:'WHO Core',sectors:['Health'],desc:'Health facility mapping and functionality assessment.'}],
+   links:[{to:'ocha',t:'c'},{to:'rrhb',t:'c'},{to:'cl_hlt',t:'c'}]},
+  {id:'unhcr',name:'UNHCR Ethiopia',type:'un',score:77,sectors:['Protection','Shelter'],zones:['Dollo Ado','Liban'],staff:44,
+   note:'Co-lead Shelter/NFI Cluster with IFRC. Refugee operations Dollo Ado — Ethiopia hosts 933,000+ refugees. Link to Nutrition Cluster absent despite site co-location.',
+   contacts:[{name:'Amina Diallo',role:'Representative',email:'a.diallo@unhcr.org'}],
+   projects:[{name:'Refugee Protection Response Dollo Ado 2025',funder:'UNHCR Core / ECHO',sectors:['Protection','Shelter'],desc:'Registration, GBV case management, shelter kits for Somali and Sudanese refugees. 3 refugee sites.'}],
+   links:[{to:'ocha',t:'c'},{to:'nrc',t:'c'},{to:'ifrc',t:'c'},{to:'rrrda',t:'c'},{to:'cl_shelt',t:'c'}]},
+  {id:'fao',name:'FAO Ethiopia',type:'un',score:79,sectors:['Food Security','Livelihoods'],zones:['All Zones'],staff:29,
+   note:'Co-lead Food Security Cluster with WFP. Leads agriculture and livelihood components. Coordinates IPC with DPPC. Part of $18M CERF+EHF anticipatory action 2024.',
+   contacts:[{name:'Karin Manente',role:'Country Representative',email:'k.manente@fao.org'}],
+   projects:[{name:'Anticipatory Action La Niña Somali 2024',funder:'CERF / EHF',sectors:['Food Security','Livelihoods'],desc:'Pre-emptive livestock destocking and cash transfers. 480,000 people targeted.'},{name:'Seed Security Programme 2025',funder:'ECHO',sectors:['Food Security'],desc:'Emergency seed kits for 62,000 pastoral and agropastoral households.'}],
+   links:[{to:'ocha',t:'c'},{to:'wfp',t:'c'},{to:'dppc',t:'c'},{to:'cl_food',t:'c'}]},
+  {id:'iom',name:'IOM Ethiopia',type:'un',score:72,sectors:['Protection','Coordination'],zones:['Jijiga','Dollo Ado','Liban'],staff:34,
+   note:'Lead CCCM Cluster. Manages Displacement Tracking Matrix (DTM). Critical in displacement sites across Somali Region. Works with RRRDA on IDP site management.',
+   contacts:[{name:'Nguyen Van Minh',role:'CCCM Coordinator',email:'nvanminh@iom.int'}],
+   projects:[{name:'DTM Somali Region Round 18',funder:'ECHO',sectors:['Coordination'],desc:'Biannual displacement tracking. 214 locations, 380,000 IDPs tracked.'}],
+   links:[{to:'ocha',t:'c'},{to:'rrrda',t:'c'},{to:'nrc',t:'c'},{to:'cl_shelt',t:'c'}]},
+  {id:'echo',name:'EU / ECHO',type:'donor',score:84,sectors:['Coordination'],zones:['Jijiga','Gode'],staff:8,
+   note:'Primary institutional donor for Somali Region. Funds ET-RRM consortium (IRC + 12 NGOs) alongside Irish Aid and FCDO. Requires inter-cluster coordination evidence for renewal.',
+   contacts:[{name:'Thomas Leblanc',role:'Head of Office',email:'thomas.leblanc@echo.europa.eu'}],
+   funded_projects:[
+     {org:'IRC',project:'ET-RRM Rapid Response 2025',amount:'€8.4M',sectors:['Health','Nutrition','Protection','WASH']},
+     {org:'ACF',project:'CMAM Scale-up Somali 2025',amount:'€3.1M',sectors:['Nutrition','WASH']},
+     {org:'NRC',project:'Shelter & Education Dollo Ado',amount:'€2.2M',sectors:['Shelter','Education']},
+     {org:'Save the Children',project:'Child Protection & Nutrition Fafan',amount:'€1.9M',sectors:['Nutrition','Protection']},
+     {org:'FAO',project:'Seed Security 2025',amount:'€1.1M',sectors:['Food Security']},
+   ],
+   links:[{to:'ocha',t:'c'},{to:'irc',t:'f'},{to:'acf',t:'f'},{to:'nrc',t:'f'},{to:'save',t:'f'},{to:'fao',t:'f'}]},
+  {id:'usaid',name:'USAID / BHA',type:'donor',score:71,sectors:['Food Security','Health'],zones:['Korahe','Shinile'],staff:6,
+   note:'INGO implementing partners. US funding freeze early 2025 severely impacted RUTF pipeline — UNICEF, ACF and WFP food distribution all affected.',
+   contacts:[{name:'Christine Nakamura',role:'Program Officer',email:'c.nakamura@usaid.gov'}],
+   funded_projects:[
+     {org:'Concern Worldwide',project:'Food Security Gode & Afder 2024',amount:'$2.8M',sectors:['Food Security','Nutrition']},
+     {org:'CRS',project:'Livelihoods & WASH Shinile 2024',amount:'$1.6M',sectors:['Food Security','WASH']},
+   ],
+   links:[{to:'ocha',t:'c'},{to:'concern',t:'f'},{to:'crs',t:'f'}]},
+  {id:'ehf',name:'EHF / OCHA Fund',type:'donor',score:75,sectors:['Coordination'],zones:['All Zones'],staff:5,
+   note:'Ethiopia Humanitarian Fund — $62.7M in 2024. 49% to local/national actors. Anticipatory action 2024: $7M EHF + $10M CERF. Rapid response for hard-to-reach areas.',
+   contacts:[{name:'Yohannes Tesfaye',role:'Fund Manager',email:'y.tesfaye@un.org'}],
+   funded_projects:[
+     {org:'ADO Ethiopia',project:'Community CMAM Korahe 2025',amount:'$420K',sectors:['Nutrition']},
+     {org:'HSO Ethiopia',project:'Primary Health Liban & Korahe',amount:'$310K',sectors:['Health']},
+     {org:'DDO Somali',project:'WASH Emergency Gode 2025',amount:'$280K',sectors:['WASH']},
+   ],
+   links:[{to:'ocha',t:'c'},{to:'cl_nut',t:'c'},{to:'cl_food',t:'c'},{to:'ado',t:'f'},{to:'hso',t:'f'},{to:'ddo',t:'f'}]},
+  {id:'irc',name:'IRC Ethiopia',type:'ingo',score:85,sectors:['Health','Nutrition','Protection','WASH'],zones:['Jijiga','Gode','Liban','Asossa'],staff:210,
+   note:'Lead agency of ET-RRM — 13-NGO consortium funded by EU/Irish Aid/FCDO since Nov 2024. 48/60 emergency alerts responded in year 1. 7 field offices. Stabilization centers and CMAM in Somali Region.',
+   contacts:[{name:'Dr. Leila Sharif',role:'Health & Nutrition Coordinator',email:'l.sharif@rescue.org'},{name:'Mohamed Hassan',role:'ET-RRM Consortium Lead',email:'m.hassan@rescue.org'}],
+   sub_partners:['ado','hso'],
+   projects:[{name:'ET-RRM Rapid Response Mechanism',funder:'ECHO / Irish Aid / FCDO',sectors:['Health','Nutrition','Protection','WASH'],desc:'13-NGO consortium. IRC as lead. Average response time <72h. 8 regions.'},{name:'CMAM Somali Region 2025',funder:'ECHO',sectors:['Nutrition'],desc:'3 stabilization centers in Gode. Target: 4,200 SAM children annually.'}],
+   links:[{to:'echo',t:'f'},{to:'acf',t:'cons'},{to:'nrc',t:'cons'},{to:'save',t:'cons'},{to:'concern',t:'cons'},{to:'drc',t:'cons'},{to:'cl_nut',t:'c'},{to:'cl_hlt',t:'c'}]},
+  {id:'acf',name:'Action Against Hunger',type:'ingo',score:86,sectors:['Nutrition','WASH','Food Security'],zones:['Jijiga','Gode','Korahe'],staff:148,
+   note:'Largest CMAM implementing partner in Somali Region. 3-zone coverage. ET-RRM member. 2025: RUTF pipeline management amid funding crisis. Integrated nutrition-WASH programming.',
+   contacts:[{name:'Nadia Mercier',role:'Country Director',email:'n.mercier@acf.org'},{name:'Khalid Hassan',role:'Nutrition PM',email:'k.hassan@acf.org'}],
+   sub_partners:['ado'],
+   projects:[{name:'CMAM Scale-up Somali 2025',funder:'ECHO',sectors:['Nutrition','WASH'],desc:'OTP in 14 woredas across Fafan, Gode, Korahe. 6,800 SAM children. ADO as sub-partner in Korahe.'},{name:'WASH Emergency Fafan 2025',funder:'EHF',sectors:['WASH'],desc:'Borehole rehabilitation, latrine construction, hygiene promotion. 38,000 beneficiaries.'}],
+   links:[{to:'unicef',t:'c'},{to:'echo',t:'f'},{to:'irc',t:'cons'},{to:'cl_nut',t:'c'},{to:'cl_wsh',t:'c'}]},
+  {id:'save',name:'Save the Children',type:'ingo',score:83,sectors:['Nutrition','Education','Protection'],zones:['Jijiga','Korahe'],staff:124,
+   note:'ET-RRM member. 47 active health posts in Jijiga Zone. Strong TSFP coverage. No WASH presence — gap with co-located WASH needs in Korahe.',
+   contacts:[{name:'Emma Ochieng',role:'Programme Director',email:'e.ochieng@savethechildren.org'}],
+   sub_partners:[],
+   projects:[{name:'Child Protection & Nutrition Fafan 2025',funder:'ECHO',sectors:['Nutrition','Protection'],desc:'TSFP in 47 health posts. 28,000 PLW and U5 in Fafan Zone.'},{name:'Education in Emergencies Korahe',funder:'UNICEF',sectors:['Education'],desc:'Temporary learning spaces for 12,400 conflict-affected children.'}],
+   links:[{to:'unicef',t:'c'},{to:'wfp',t:'c'},{to:'echo',t:'f'},{to:'irc',t:'cons'},{to:'cl_nut',t:'c'}]},
+  {id:'concern',name:'Concern Worldwide',type:'ingo',score:78,sectors:['Nutrition','Food Security','WASH'],zones:['Gode','Afder','Shinile'],staff:86,
+   note:'ET-RRM member. Integrated nutrition-food security in Gode and Afder. Strong last-mile delivery. USAID/BHA funded in Shinile — suspended Q1 2025 following US freeze.',
+   contacts:[{name:"Brian O'Sullivan",role:'Country Director',email:'b.osullivan@concern.net'}],
+   sub_partners:[],
+   projects:[{name:'Food Security Gode & Afder 2024',funder:'USAID / BHA',sectors:['Food Security','Nutrition'],desc:'Cash-based transfers and TSFP for 18,000 food-insecure households. Suspended Q1 2025.'},{name:'WASH & Nutrition Shinile 2025',funder:'EHF',sectors:['WASH','Nutrition'],desc:'Bridge funding replacement after US freeze.'}],
+   links:[{to:'usaid',t:'f'},{to:'wfp',t:'c'},{to:'irc',t:'cons'},{to:'cl_nut',t:'c'},{to:'cl_food',t:'c'}]},
+  {id:'drc',name:'DRC Ethiopia',type:'ingo',score:76,sectors:['Protection','Shelter','WASH'],zones:['Dollo Ado','Liban','Korahe'],staff:97,
+   note:'ET-RRM member. Protection and shelter in refugee-hosting zones. GBV case management. Limited nutrition coordination despite geographic co-location.',
+   contacts:[{name:'Astrid Petersen',role:'Country Director',email:'a.petersen@drc.ngo'}],
+   sub_partners:[],
+   projects:[{name:'GBV Prevention & Response Dollo Ado 2025',funder:'UNHCR / ECHO',sectors:['Protection'],desc:'Case management, safe spaces, referral pathways. 8,400 survivors. 3 caseworkers per site.'},{name:'Shelter & WASH Liban Zone',funder:'ECHO',sectors:['Shelter','WASH'],desc:'Transitional shelter for 4,200 newly displaced households.'}],
+   links:[{to:'unhcr',t:'c'},{to:'echo',t:'f'},{to:'irc',t:'cons'},{to:'cl_shelt',t:'c'},{to:'cl_hlt',t:'c'}]},
+  {id:'nrc',name:'NRC Ethiopia',type:'ingo',score:75,sectors:['Shelter','WASH','Education'],zones:['Dollo Ado','Liban','Asossa'],staff:112,
+   note:'ET-RRM member. Operations across 6 Ethiopian regions. WASH and shelter in refugee-hosting zones. Limited coordination with nutrition actors despite geographic overlap.',
+   contacts:[{name:'Astrid Berg',role:'Country Director',email:'a.berg@nrc.no'}],
+   sub_partners:[],
+   projects:[{name:'Shelter & Education Dollo Ado 2025',funder:'ECHO',sectors:['Shelter','Education'],desc:'Core relief items and temporary learning spaces. 6,200 refugee and IDP households.'},{name:'WASH Emergency Response Liban',funder:'EHF',sectors:['WASH'],desc:'Water trucking and hygiene kits for 22,000 people in Liban Zone.'}],
+   links:[{to:'unhcr',t:'c'},{to:'iom',t:'c'},{to:'echo',t:'f'},{to:'irc',t:'cons'},{to:'cl_wsh',t:'c'},{to:'cl_shelt',t:'c'}]},
+  {id:'ifrc',name:'IFRC',type:'ingo',score:72,sectors:['Shelter','Health','Food Security'],zones:['All Zones'],staff:18,
+   note:'Co-lead Shelter/NFI Cluster with UNHCR. Works via Ethiopian Red Cross Society (ERCS) as principal partner. First responder for disaster contexts.',
+   contacts:[{name:'Caroline Njagi',role:'Head of Delegation',email:'c.njagi@ifrc.org'}],
+   sub_partners:['ercs'],
+   projects:[{name:'Disaster Response Operation Somali 2025',funder:'DREF / National Societies',sectors:['Shelter','Health'],desc:'Emergency NFI, first aid, water purification through ERCS branch network. 14,000 flood-affected households.'}],
+   links:[{to:'unhcr',t:'c'},{to:'cl_shelt',t:'c'},{to:'ercs',t:'c'}]},
+  {id:'msf',name:'MSF',type:'ingo',score:81,sectors:['Health','Nutrition'],zones:['Dollo Ado','Liban'],staff:94,
+   note:'Independent — does not participate in formal cluster on principled basis. Stabilization centers in Dollo Ado. High credibility and access in conflict-affected zones.',
+   contacts:[{name:'Dr. Marco Reyes',role:'Medical Coordinator',email:'m.reyes@msf.org'}],
+   sub_partners:[],
+   projects:[{name:'Stabilization Center Dollo Ado (ongoing)',funder:'MSF own funds',sectors:['Health','Nutrition'],desc:'24/7 inpatient SAM treatment. 1,200 beds. Independent supply chain. 94 staff on rotation.'}],
+   links:[{to:'cl_hlt',t:'k'}]},
+  {id:'crs',name:'CRS Ethiopia',type:'ingo',score:70,sectors:['Food Security','WASH','Livelihoods'],zones:['Shinile','Afder'],staff:54,
+   note:'USAID/BHA implementing partner. Programming partly suspended following 2025 US funding freeze.',
+   contacts:[{name:'Michael Otieno',role:'Program Manager',email:'m.otieno@crs.org'}],
+   sub_partners:[],
+   projects:[{name:'Livelihoods & WASH Shinile 2024',funder:'USAID / BHA',sectors:['Food Security','WASH'],desc:'Cash-for-work and water rehabilitation. Suspended Q1 2025.'}],
+   links:[{to:'usaid',t:'f'},{to:'fao',t:'c'},{to:'cl_food',t:'c'},{to:'cl_wsh',t:'c'}]},
+  {id:'ado',name:'ADO Ethiopia',type:'nngo',score:66,sectors:['Nutrition','Food Security'],zones:['Korahe','Afder'],staff:38,
+   note:'Local NGO. Strong community access in Korahe. Sub-partner for ACF on CMAM. EHF direct recipient — 40% of EHF 2024 to local/national actors. Limited reporting capacity.',
+   contacts:[{name:'Hassan Abdi',role:'Executive Director',email:'h.abdi@ado.et'}],
+   projects:[{name:'Community CMAM Korahe 2025',funder:'EHF (direct)',sectors:['Nutrition'],desc:'MUAC screening and OTP referral in 8 hard-to-reach woredas. Sub-partner to ACF for RUTF distribution.'}],
+   links:[{to:'acf',t:'c'},{to:'ehf',t:'f'},{to:'cl_nut',t:'c'}]},
+  {id:'ddo',name:'DDO Somali',type:'nngo',score:61,sectors:['WASH','Livelihoods'],zones:['Gode','Shinile'],staff:24,
+   note:'Local NGO. WASH in Gode. High community trust in pastoral areas. EHF direct recipient. Present in same locations as IRC and WFP with no joint coordination.',
+   contacts:[{name:'Faadumo Shire',role:'Director',email:'f.shire@ddo.et'}],
+   projects:[{name:'WASH Emergency Gode 2025',funder:'EHF (direct)',sectors:['WASH'],desc:'Water trucking and latrine rehabilitation for 11,000 urban and peri-urban IDPs in Gode town.'}],
+   links:[{to:'cl_wsh',t:'c'},{to:'crs',t:'c'},{to:'ehf',t:'f'}]},
+  {id:'hso',name:'HSO Ethiopia',type:'nngo',score:59,sectors:['Health','Nutrition'],zones:['Korahe','Liban'],staff:31,
+   note:'Somali civil society. Primary health and nutrition outreach in hard-to-reach woredas where INGO access is restricted. EHF direct recipient. Under-resourced, high reach.',
+   contacts:[{name:'Dr. Maryam Jama',role:'Health Director',email:'m.jama@hso.et'}],
+   projects:[{name:'Primary Health Liban & Korahe 2025',funder:'EHF (direct)',sectors:['Health','Nutrition'],desc:'Mobile health teams in 6 woredas with no permanent facility. MUAC integrated with OPD.'}],
+   links:[{to:'cl_hlt',t:'c'},{to:'ado',t:'c'},{to:'ehf',t:'f'}]},
+  {id:'ercs',name:'Ethiopian Red Cross',type:'nngo',score:67,sectors:['Health','Shelter','Food Security'],zones:['All Zones'],staff:180,
+   note:'National society. Principal partner of IFRC. Auxiliary to Government. Key first responder in floods, displacement and disease outbreaks.',
+   contacts:[{name:'Ahmed Warsame',role:'Secretary General',email:'a.warsame@ercs.org.et'}],
+   projects:[{name:'Disaster Response Somali Region 2025',funder:'IFRC / DREF',sectors:['Shelter','Health'],desc:'Branch network for flood response. NFI and first aid teams. 14,000 households reached.'}],
+   links:[{to:'ifrc',t:'c'},{to:'ocha',t:'k'},{to:'cl_hlt',t:'c'},{to:'cl_shelt',t:'c'}]},
+  {id:'cl_nut',name:'Nutrition Cluster',type:'cluster',score:88,sectors:['Nutrition'],zones:['All Zones'],staff:0,
+   note:'Co-led by UNICEF and EDRMC/ENCU — unique Ethiopia government co-leadership model. 2025 crisis: ~2-month RUTF pipeline break. 329,664 SAM admissions H1 2025 (46% of HRP target). Korahe Zone 3 gap unresolved since W42 2024.',
+   contacts:[{name:'Miriam Osei',role:'CLA UNICEF',email:'m.osei@unicef.org'},{name:'Dr. Tigist Bacha',role:'Co-lead ENCU',email:'t.bacha@edrmc.gov.et'}],
+   members:{un:['unicef','wfp'],ingo:['acf','irc','save','concern'],nngo:['ado']},
+   gaps:['RUTF pipeline break ~2 months Q1 2025 (US funding freeze)','No inter-cluster link to WASH on co-located sites','Korahe Zone 3 coverage gap unresolved since W42 2024'],
+   links:[{to:'ocha',t:'c'},{to:'unicef',t:'c'},{to:'edrmc',t:'c'},{to:'acf',t:'c'},{to:'irc',t:'c'},{to:'save',t:'c'},{to:'concern',t:'c'},{to:'wfp',t:'c'},{to:'ado',t:'c'}]},
+  {id:'cl_wsh',name:'WASH Cluster',type:'cluster',score:78,sectors:['WASH'],zones:['Jijiga','Gode','Shinile'],staff:0,
+   note:'Led by UNICEF. No coordination mechanism with Nutrition Cluster on co-located sites. Shinile Zone absent since Q3 2024.',
+   contacts:[{name:'Peter Mwangi',role:'Cluster Coordinator',email:'p.mwangi@unicef.org'}],
+   members:{un:['unicef'],ingo:['acf','nrc','crs','drc'],nngo:['ddo']},
+   gaps:['No inter-cluster link with Nutrition on co-located CMAM/WASH sites','Shinile Zone — no cluster meeting since Q3 2024','WASH NFI pipeline: 30% of requirements funded'],
+   links:[{to:'ocha',t:'c'},{to:'unicef',t:'c'},{to:'acf',t:'c'},{to:'nrc',t:'c'},{to:'crs',t:'c'},{to:'ddo',t:'c'}]},
+  {id:'cl_hlt',name:'Health Cluster',type:'cluster',score:74,sectors:['Health'],zones:['Jijiga','Dollo Ado','Liban'],staff:0,
+   note:'Co-led by WHO and RHB. Only 24% funded in 2023. MSF outside cluster on principled basis — stabilization center data not shared. Cholera ongoing since 2022.',
+   contacts:[{name:'Dr. Fatuma Warsame',role:'Co-lead WHO',email:'f.warsame@who.int'},{name:'Dr. Ahmed Hassan',role:'Co-lead RHB',email:'a.hassan@rrhb.gov.et'}],
+   members:{un:['who'],ingo:['irc','drc'],nngo:['hso','ercs']},
+   gaps:['24% funded 2023 — critical underfunding','No SAM/MAM referral pathway to Nutrition Cluster','MSF outside cluster — stabilization center data not shared','Cholera surveillance gaps in Liban Zone'],
+   links:[{to:'ocha',t:'c'},{to:'who',t:'c'},{to:'rrhb',t:'c'},{to:'irc',t:'c'},{to:'msf',t:'k'},{to:'hso',t:'c'},{to:'ercs',t:'c'}]},
+  {id:'cl_food',name:'Food Security Cluster',type:'cluster',score:81,sectors:['Food Security'],zones:['All Zones'],staff:0,
+   note:'Co-led by WFP and FAO. Highest funded cluster in 2024 at 62%. Anticipatory action 2024: $18M CERF+EHF. IPC process feeds cluster priorities.',
+   contacts:[{name:'James Kariuki',role:'Co-lead WFP',email:'j.kariuki@wfp.org'},{name:'Karin Manente',role:'Co-lead FAO',email:'k.manente@fao.org'}],
+   members:{un:['wfp','fao'],ingo:['concern','crs'],nngo:[]},
+   gaps:['US freeze Q1 2025 — WFP ration cut to 60%','CRS programming suspended — Shinile gap','Agriculture/livelihoods underfunded vs emergency food'],
+   links:[{to:'ocha',t:'c'},{to:'wfp',t:'c'},{to:'fao',t:'c'},{to:'concern',t:'c'},{to:'crs',t:'c'},{to:'dppc',t:'c'},{to:'ehf',t:'c'}]},
+  {id:'cl_shelt',name:'Shelter / NFI Cluster',type:'cluster',score:70,sectors:['Shelter'],zones:['Dollo Ado','Liban','Jijiga'],staff:0,
+   note:'Co-led by UNHCR and IFRC. IOM-led CCCM closely linked. No coordination with Nutrition or Health at most displacement sites.',
+   contacts:[{name:'Amina Diallo',role:'Co-lead UNHCR',email:'a.diallo@unhcr.org'},{name:'Caroline Njagi',role:'Co-lead IFRC',email:'c.njagi@ifrc.org'}],
+   members:{un:['unhcr','iom'],ingo:['nrc','drc','ifrc'],nngo:['ercs']},
+   gaps:['No multi-sectoral coordination with Nutrition/Health at displacement sites','NFI pipeline: 40% funded','Cluster meeting frequency reduced to monthly'],
+   links:[{to:'ocha',t:'c'},{to:'unhcr',t:'c'},{to:'ifrc',t:'c'},{to:'nrc',t:'c'},{to:'drc',t:'c'},{to:'iom',t:'c'}]},
+  // ABC — near centre
+  {id:'abc_jij',name:'Jijiga Zone',type:'abc',abc:true,score:0,sectors:['Coordination'],zones:['Jijiga'],
+   note:'ACF (Nutrition/WASH), Save (Nutrition), UNICEF (WASH/Nutrition), Health Cluster all present — zero formal Nutrition-WASH inter-cluster mechanism. Fafan Zone SMART survey June 2024: GAM 16.5% (Very High).',
+   contacts:[],links:[{to:'acf',t:'a'},{to:'save',t:'a'},{to:'unicef',t:'a'},{to:'cl_nut',t:'a'},{to:'cl_wsh',t:'a'}]},
+  {id:'abc_gode',name:'Gode Zone',type:'abc',abc:true,score:0,sectors:['Coordination'],zones:['Gode'],
+   note:'IRC (Health/Nutrition), WFP (Food), Concern (Nutrition/Food Security), WASH and Health Clusters all active — no inter-cluster forum. Stabilization centers and food distribution operate with no shared referral pathway.',
+   contacts:[],links:[{to:'irc',t:'a'},{to:'wfp',t:'a'},{to:'concern',t:'a'},{to:'cl_wsh',t:'a'},{to:'cl_hlt',t:'a'}]},
+  {id:'abc_kor',name:'Korahe Zone',type:'abc',abc:true,score:0,sectors:['Coordination'],zones:['Korahe'],
+   note:'Highest-gap zone. Nutrition, Food Security and WASH Clusters present — zero inter-cluster mechanism. ACF, CRS and ADO Ethiopia operating in parallel. Gap unresolved since W42 2024.',
+   contacts:[],links:[{to:'acf',t:'a'},{to:'crs',t:'a'},{to:'rrrda',t:'a'},{to:'ado',t:'a'},{to:'cl_nut',t:'a'},{to:'cl_food',t:'a'}]},
+  {id:'abc_dol',name:'Dollo Ado',type:'abc',abc:true,score:0,sectors:['Coordination'],zones:['Dollo Ado','Liban'],
+   note:'MSF (independent), NRC, DRC, UNHCR, RRRDA and IOM all present — no shared coordination forum. MSF independent means no cluster link despite running the main stabilization center.',
+   contacts:[],links:[{to:'msf',t:'a'},{to:'nrc',t:'a'},{to:'drc',t:'a'},{to:'unhcr',t:'a'},{to:'iom',t:'a'},{to:'cl_hlt',t:'a'},{to:'cl_shelt',t:'a'}]},
+];
+
+// Build links
+const ALL_LINKS=[];
+const _seen=new Set();
+NODES.forEach(n=>{(n.links||[]).forEach(l=>{
+  const key=[n.id,l.to].sort().join('~~');
+  if(!_seen.has(key)){_seen.add(key);
+    const type=l.t==='a'?'abc':l.t==='cons'?'consortium':l.t==='f'?'funding':l.t==='c'?'coordinates':'knows';
+    ALL_LINKS.push({source:n.id,target:l.to,type});
+  }
+});});
+const NBR=new Map();
+NODES.forEach(n=>NBR.set(n.id,new Set()));
+ALL_LINKS.forEach(l=>{NBR.get(l.source)?.add(l.target);NBR.get(l.target)?.add(l.source);});
+
+let W=0,H=0,focusedId=null,abcVisible=false,zB=null,svgR=null,mG=null;
+
+function nR(d){
+  if(d.type==='abc') return 0;
+  if(d.type==='cluster') return 28;
+  if(d.id==='ocha') return 24;
+  if(d.type==='un') return 20;
+  if(d.score>=83) return 18;
+  if(d.score>=70) return 16;
+  return 15;
+}
+function moons(sectors,r){
+  const n=sectors.length; if(!n) return [];
+  const oR=r+15;
+  return sectors.map((s,i)=>{
+    const frac=n===1?0.5:i/(n-1);
+    const a=(frac*Math.PI*1.6)-Math.PI*0.8-Math.PI/2;
+    return{x:oR*Math.cos(a),y:oR*Math.sin(a),r:5,color:SC[s]||'#888'};
+  });
+}
+function placeNodes(W,H){
+  // Row y positions
+  const R1y=H*0.18;
+  const R2y=H*0.50;
+  const R3y=H*0.80;
+
+  // GOVERNMENT — 4 nodes, left column
+  const govNodes=NODES.filter(n=>n.type==='government');
+  govNodes.forEach((n,i)=>{
+    n.x=W*0.04+(W*0.20/(govNodes.length-1||1))*i;
+    n.y=R1y+(i%2)*H*0.12;
+  });
+
+  // UN — 7 nodes, centre, 4+3 layout
+  const unNodes=NODES.filter(n=>n.type==='un');
+  const unCols=4, unX0=W*0.26, unSpan=W*0.42;
+  unNodes.forEach((n,i)=>{
+    const col=i%unCols, row=Math.floor(i/unCols);
+    const rowCount=(row===0)?Math.min(unCols,unNodes.length):unNodes.length-unCols;
+    const rowSpan=unSpan*(rowCount-1)/(unCols-1);
+    const offset=(unSpan-rowSpan)/2;
+    n.x=unX0+offset+rowSpan/(rowCount-1||1)*col;
+    n.y=R1y+row*H*0.16;
+  });
+
+  // DONORS — 3 nodes, right
+  const donNodes=NODES.filter(n=>n.type==='donor');
+  donNodes.forEach((n,i)=>{
+    n.x=W*0.77+(W*0.16/(donNodes.length-1||1))*i;
+    n.y=R1y+(i%2)*H*0.12;
+  });
+
+  // CLUSTERS — 5 nodes, centred horizontally in left 65% of width
+  const clNodes=NODES.filter(n=>n.type==='cluster');
+  const clCount=clNodes.length;
+  const clX0=W*0.08, clSpan=W*0.55;
+  clNodes.forEach((n,i)=>{
+    n.x=clX0+clSpan/(clCount-1)*i;
+    n.y=R2y;
+  });
+
+  // ABC — 4 nodes, 2×2 grid to the RIGHT of clusters
+  const abcNodes=NODES.filter(n=>n.abc);
+  const abcX0=W*0.72, abcColGap=W*0.11, abcRowGap=H*0.12;
+  abcNodes.forEach((n,i)=>{
+    n.x=abcX0+(i%2)*abcColGap;
+    n.y=R2y+(Math.floor(i/2)-0.5)*abcRowGap;
+  });
+
+  // INGO — 9 nodes, left 55%, 5+4 layout
+  const ingoNodes=NODES.filter(n=>n.type==='ingo');
+  const ingoCols=5, ingoX0=W*0.03, ingoSpan=W*0.52;
+  ingoNodes.forEach((n,i)=>{
+    n.x=ingoX0+ingoSpan/(ingoCols-1)*(i%ingoCols);
+    n.y=R3y+Math.floor(i/ingoCols)*H*0.14;
+  });
+
+  // NNGO — 4 nodes, right 35%, 2×2
+  const nngoNodes=NODES.filter(n=>n.type==='nngo');
+  const nngoX0=W*0.63, nngoSpan=W*0.33, nngoCols=2;
+  nngoNodes.forEach((n,i)=>{
+    n.x=nngoX0+nngoSpan/(nngoCols-1||1)*(i%nngoCols);
+    n.y=R3y+Math.floor(i/nngoCols)*H*0.14;
+  });
+}
+function lS(t){if(t==='coordinates')return'#C9A84C';if(t==='funding')return'rgba(245,158,11,0.75)';if(t==='consortium')return'rgba(148,163,184,0.7)';if(t==='knows')return'rgba(100,116,139,0.5)';if(t==='abc')return'#ef4444';return'rgba(255,255,255,0.2)';}
+function lW(t){if(t==='coordinates')return 2.5;if(t==='funding')return 1.5;if(t==='consortium')return 1.2;return 0.8;}
+function lD(t){if(t==='knows')return'4 3';if(t==='abc')return'3 2';return null;}
+
+function render(){
+  const svg=d3.select('#svg');svg.selectAll('*').remove();
+  W=svg.node().clientWidth||900;H=svg.node().clientHeight||600;
+  placeNodes(W,H);
+  const defs=svg.append('defs');
+  [['gn','34,197,94'],['gw','74,158,255'],['gh','167,139,250'],['ga','239,68,68'],['gf','245,158,11']].forEach(([id,rgb])=>{
+    defs.append('filter').attr('id','gf_'+id).html(`<feGaussianBlur stdDeviation="5" result="b"/><feFlood flood-color="rgba(${rgb},0.28)" result="c"/><feComposite in="c" in2="b" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>`);
+  });
+  svgR=svg;
+  zB=d3.zoom().scaleExtent([0.12,4]).on('zoom',e=>mG.attr('transform',e.transform));
+  svg.call(zB);
+  svg.on('click',()=>{if(focusedId)resetView();});
+  mG=svg.append('g');
+
+  // Zone labels — fixed positions matching placeNodes layout
+  const zg=mG.append('g').attr('pointer-events','none');
+  function zoneLabel(x,y,label,sub,color){
+    zg.append('text').attr('x',x).attr('y',y).attr('font-family','IBM Plex Mono,monospace').attr('font-size',10).attr('font-weight','500').attr('letter-spacing','0.13em').attr('fill',color).attr('opacity',0.5).text(label);
+    zg.append('text').attr('x',x).attr('y',y+14).attr('font-family','Inter,sans-serif').attr('font-size',9).attr('font-weight','300').attr('fill',color).attr('opacity',0.28).text(sub);
+  }
+  // Horizontal dividers between rows
+  zg.append('line').attr('x1',0).attr('y1',H*0.34).attr('x2',W).attr('y2',H*0.34).attr('stroke','rgba(255,255,255,0.05)').attr('stroke-width',0.5);
+  zg.append('line').attr('x1',0).attr('y1',H*0.63).attr('x2',W).attr('y2',H*0.63).attr('stroke','rgba(255,255,255,0.05)').attr('stroke-width',0.5);
+  // Vertical divider between INGO and NNGO
+  zg.append('line').attr('x1',W*0.58).attr('y1',H*0.63).attr('x2',W*0.58).attr('y2',H).attr('stroke','rgba(255,255,255,0.04)').attr('stroke-width',0.5);
+
+  zoneLabel(W*0.02, H*0.05, 'GOVERNMENT', 'State authority · co-leads clusters', 'rgba(249,115,22,1)');
+  zoneLabel(W*0.30, H*0.05, 'UN AGENCIES', 'Cluster leads · pipeline · provider of last resort', 'rgba(167,139,250,1)');
+  zoneLabel(W*0.74, H*0.05, 'DONORS', 'Institutional funding', 'rgba(245,158,11,1)');
+  zoneLabel(W*0.08, H*0.37, 'CLUSTERS', 'Sector coordination forums', 'rgba(255,255,255,1)');
+  zoneLabel(W*0.70, H*0.37, 'ABC GAPS', 'Co-location · no mechanism', 'rgba(239,68,68,1)');
+  zoneLabel(W*0.02, H*0.66, 'INGO', 'Direct implementation · ET-RRM', 'rgba(74,158,255,1)');
+  zoneLabel(W*0.61, H*0.66, 'CSO / NNGO', 'Local access · EHF direct recipients', 'rgba(52,211,153,1)');
+
+  const nById=new Map(NODES.map(n=>[n.id,n]));
+
+  // Links — hidden by default
+  const lg=mG.append('g');
+  lg.selectAll('line.rl').data(ALL_LINKS).join('line').attr('class','rl')
+    .attr('x1',d=>nById.get(d.source)?.x||0).attr('y1',d=>nById.get(d.source)?.y||0)
+    .attr('x2',d=>nById.get(d.target)?.x||0).attr('y2',d=>nById.get(d.target)?.y||0)
+    .attr('stroke',d=>lS(d.type)).attr('stroke-width',d=>lW(d.type))
+    .attr('stroke-dasharray',d=>lD(d.type)).style('opacity',0).style('pointer-events','none');
+
+  // Non-ABC nodes
+  const ng=mG.append('g');
+  const nSel=ng.selectAll('g.ng').data(NODES.filter(n=>!n.abc)).join('g').attr('class','ng').attr('transform',d=>`translate(${d.x},${d.y})`).style('cursor','pointer');
+  nSel.filter(d=>d.type==='cluster').append('circle').attr('r',d=>nR(d)+15).attr('fill','none')
+    .attr('stroke',d=>d.id==='cl_nut'?'rgba(34,197,94,0.1)':d.id==='cl_wsh'?'rgba(6,182,212,0.1)':d.id==='cl_hlt'?'rgba(239,68,68,0.1)':d.id==='cl_food'?'rgba(234,179,8,0.1)':'rgba(249,115,22,0.1)').attr('stroke-width',1).attr('pointer-events','none');
+  nSel.filter(d=>d.type!=='cluster').append('circle').attr('r',d=>nR(d)+4).attr('fill','none').attr('stroke',d=>ss(d.score)).attr('stroke-width',1.2).attr('opacity',0.35).attr('pointer-events','none');
+  nSel.append('circle').attr('r',nR).attr('fill',d=>d.type==='cluster'?'rgba(255,255,255,0.07)':'rgba(255,255,255,0.05)').attr('stroke',d=>TC[d.type]||'#fff').attr('stroke-width',d=>d.type==='cluster'?2:1)
+    .attr('filter',d=>d.id==='cl_nut'?'url(#gf_gn)':d.id==='cl_wsh'?'url(#gf_gw)':d.id==='cl_hlt'?'url(#gf_gh)':d.id==='cl_food'?'url(#gf_gf)':null);
+  nSel.filter(d=>d.sectors?.length>0).each(function(d){moons(d.sectors,nR(d)).forEach(m=>{d3.select(this).append('circle').attr('cx',m.x).attr('cy',m.y).attr('r',m.r).attr('fill',m.color).attr('opacity',0.9).attr('pointer-events','none');});});
+  nSel.append('text').attr('text-anchor','middle').attr('dominant-baseline','central').attr('y',-1).attr('font-size',d=>d.type==='cluster'?11:10).attr('font-weight',d=>d.type==='cluster'?'500':'400').attr('font-family','Inter,sans-serif').attr('fill',d=>d.type==='cluster'?'rgba(255,255,255,0.92)':'rgba(255,255,255,0.75)').attr('pointer-events','none').text(d=>{const w=d.name.split(' ');return d.name.length>14?w.slice(0,2).join(' '):d.name;});
+  nSel.filter(d=>d.type!=='cluster').append('circle').attr('cx',d=>nR(d)*0.72).attr('cy',d=>-nR(d)*0.72).attr('r',9).attr('fill',d=>ss(d.score)).attr('stroke','#080c11').attr('stroke-width',1.5).attr('pointer-events','none');
+  nSel.filter(d=>d.type!=='cluster').append('text').attr('x',d=>nR(d)*0.72).attr('y',d=>-nR(d)*0.72).attr('text-anchor','middle').attr('dominant-baseline','central').attr('font-size',8).attr('font-weight','500').attr('font-family','IBM Plex Mono,monospace').attr('fill','#fff').attr('pointer-events','none').text(d=>d.score);
+  nSel.style('opacity',0).transition().delay((_,i)=>i*10).duration(280).style('opacity',1);
+
+  // ABC nodes
+  const abcG=mG.append('g');
+  const abcSel=abcG.selectAll('g.ag').data(NODES.filter(n=>n.abc)).join('g').attr('class','ag').attr('transform',d=>`translate(${d.x},${d.y})`).style('cursor','pointer').style('opacity',abcVisible?1:0);
+  abcSel.append('rect').attr('width',36).attr('height',36).attr('x',-18).attr('y',-18).attr('rx',2).attr('transform','rotate(45)').attr('fill','rgba(239,68,68,0.08)').attr('stroke','#ef4444').attr('stroke-width',1.5).attr('filter','url(#gf_ga)');
+  abcSel.append('rect').attr('width',52).attr('height',52).attr('x',-26).attr('y',-26).attr('rx',2).attr('transform','rotate(45)').attr('fill','none').attr('stroke','rgba(239,68,68,0.2)').attr('stroke-width',1).attr('pointer-events','none');
+  abcSel.append('text').attr('text-anchor','middle').attr('dominant-baseline','central').attr('y',-1).attr('font-size',9).attr('font-family','Inter,sans-serif').attr('font-weight','500').attr('fill','#ef4444').attr('pointer-events','none').text(d=>d.name);
+
+  const tip=document.getElementById('tooltip');
+  function showL(id){
+    const nb=NBR.get(id)||new Set();
+    lg.selectAll('line.rl').each(function(d){d3.select(this).transition().duration(180).style('opacity',d.source===id||d.target===id?1:0);});
+    ng.selectAll('g.ng').transition().duration(180).style('opacity',d=>(d.id===id||nb.has(d.id))?1:0.07);
+    abcG.selectAll('g.ag').transition().duration(180).style('opacity',d=>abcVisible?(NBR.get(d.id)||new Set()).has(id)?1:0.05:0);
+  }
+  function clearL(){
+    if(focusedId) return;
+    lg.selectAll('line.rl').transition().duration(250).style('opacity',0);
+    ng.selectAll('g.ng').transition().duration(250).style('opacity',1);
+    abcG.selectAll('g.ag').transition().duration(250).style('opacity',abcVisible?1:0);
+  }
+  nSel.on('mouseover',(e,d)=>{if(focusedId)return;showL(d.id);tip.innerHTML=`<strong>${d.name}</strong><br>${TL[d.type]}${d.staff?' · '+d.staff+' staff':''}<br><span style="color:rgba(255,255,255,0.3)">${(NBR.get(d.id)||new Set()).size} connections</span>`;tip.style.display='block';})
+    .on('mousemove',e=>{tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY+14)+'px';})
+    .on('mouseout',()=>{if(focusedId)return;clearL();tip.style.display='none';})
+    .on('click',(e,d)=>{e.stopPropagation();tip.style.display='none';focusNode(d.id);});
+  abcSel.on('mouseover',(e,d)=>{if(focusedId)return;showL(d.id);tip.innerHTML=`<strong>${d.name}</strong><br>ABC ZONE GAP<br><span style="color:rgba(255,255,255,0.3)">${(NBR.get(d.id)||new Set()).size} actors co-present</span>`;tip.style.display='block';})
+    .on('mousemove',e=>{tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY+14)+'px';})
+    .on('mouseout',()=>{if(focusedId)return;clearL();tip.style.display='none';})
+    .on('click',(e,d)=>{e.stopPropagation();tip.style.display='none';focusNode(d.id);});
+}
+
+function focusNode(id){
+  focusedId=id;
+  document.getElementById('t-reset').classList.add('visible');
+  document.getElementById('tooltip').style.display='none';
+  openSidebar(id);
+  renderEgo(id);
+}
+
+function renderEgo(id){
+  const svg=d3.select('#svg');
+  svg.selectAll('*').remove();
+  const W2=svg.node().clientWidth||900;
+  const H2=svg.node().clientHeight||600;
+
+  // center — account for sidebar width (320px)
+  const sidebarOpen=document.getElementById('sidebar').classList.contains('open');
+  const cx=(W2-(sidebarOpen?320:0))/2;
+  const cy=H2/2;
+
+  const center=NODES.find(n=>n.id===id); if(!center) return;
+  const nb=NBR.get(id)||new Set();
+
+  // Collect neighbor nodes — include ABC only if abcVisible
+  const neighbors=NODES.filter(n=>n.id!==id && nb.has(n.id) && (n.type!=='abc'||abcVisible));
+
+  // Radial placement — group by type so same-type nodes cluster together
+  const typeOrder=['cluster','un','government','ingo','nngo','donor','abc'];
+  neighbors.sort((a,b)=>{
+    const ta=typeOrder.indexOf(a.type),tb=typeOrder.indexOf(b.type);
+    return ta===tb?a.name.localeCompare(b.name):ta-tb;
+  });
+
+  const n=neighbors.length;
+  const orbitR=Math.min(cx,cy)*0.62;
+  neighbors.forEach((nd,i)=>{
+    const angle=(2*Math.PI*i/n)-Math.PI/2;
+    nd._ex=cx+orbitR*Math.cos(angle);
+    nd._ey=cy+orbitR*Math.sin(angle);
+  });
+  center._ex=cx; center._ey=cy;
+
+  // Defs
+  const defs=svg.append('defs');
+  [['gn','34,197,94'],['gw','74,158,255'],['gh','167,139,250'],['ga','239,68,68'],['gf','245,158,11'],['gg','201,168,76']].forEach(([did,rgb])=>{
+    defs.append('filter').attr('id','ef_'+did).html(`<feGaussianBlur stdDeviation="6" result="b"/><feFlood flood-color="rgba(${rgb},0.3)" result="c"/><feComposite in="c" in2="b" operator="in" result="s"/><feMerge><feMergeNode in="s"/><feMergeNode in="SourceGraphic"/></feMerge>`);
+  });
+
+  const g=svg.append('g');
+
+  // Links
+  const egoLinks=ALL_LINKS.filter(l=>(l.source===id||l.target===id)&&nb.has(l.source===id?l.target:l.source));
+  g.selectAll('line.el').data(egoLinks).join('line').attr('class','el')
+    .attr('x1',cx).attr('y1',cy)
+    .attr('x2',d=>{const tid=d.source===id?d.target:d.source;const tn=neighbors.find(n=>n.id===tid);return tn?tn._ex:cx;})
+    .attr('y2',d=>{const tid=d.source===id?d.target:d.source;const tn=neighbors.find(n=>n.id===tid);return tn?tn._ey:cy;})
+    .attr('stroke',d=>lS(d.type)).attr('stroke-width',d=>lW(d.type)+0.5)
+    .attr('stroke-dasharray',d=>lD(d.type))
+    .style('opacity',0).transition().duration(400).delay(100).style('opacity',1);
+
+  // Link type labels on lines
+  egoLinks.forEach(l=>{
+    const tid=l.source===id?l.target:l.source;
+    const tn=neighbors.find(n=>n.id===tid); if(!tn) return;
+    const mx=(cx+tn._ex)/2, my=(cy+tn._ey)/2;
+    const lbl=l.type==='coordinates'?'cluster':l.type==='funding'?'funds':l.type==='consortium'?'consortium':l.type==='abc'?'abc gap':l.type==='knows'?'informal':'';
+    if(!lbl) return;
+    g.append('text').attr('x',mx).attr('y',my-5).attr('text-anchor','middle').attr('font-family','IBM Plex Mono,monospace').attr('font-size',8).attr('fill',lS(l.type)).attr('opacity',0.55).attr('pointer-events','none').text(lbl);
+  });
+
+  // Neighbor nodes
+  function drawNode(sel, nd, isCenter){
+    const r=isCenter?nR(nd)+6:nR(nd);
+    const x=nd._ex, y=nd._ey;
+    const ng=sel.append('g').attr('class','ego-n').attr('transform',`translate(${x},${y})`).style('cursor','pointer').style('opacity',0);
+    // glow ring for center
+    if(isCenter){
+      ng.append('circle').attr('r',r+14).attr('fill','none').attr('stroke','rgba(201,168,76,0.15)').attr('stroke-width',1).attr('pointer-events','none');
+      ng.append('circle').attr('r',r+7).attr('fill','none').attr('stroke','rgba(201,168,76,0.25)').attr('stroke-width',0.5).attr('pointer-events','none');
+    }
+    // score ring
+    if(!isCenter&&nd.type!=='cluster'&&nd.type!=='abc'){
+      ng.append('circle').attr('r',r+4).attr('fill','none').attr('stroke',ss(nd.score)).attr('stroke-width',1.2).attr('opacity',0.35).attr('pointer-events','none');
+    }
+    // main circle / diamond
+    if(nd.type==='abc'){
+      ng.append('rect').attr('width',r*2.2).attr('height',r*2.2).attr('x',-r*1.1).attr('y',-r*1.1).attr('rx',2).attr('transform','rotate(45)').attr('fill','rgba(239,68,68,0.08)').attr('stroke','#ef4444').attr('stroke-width',1.5).attr('filter','url(#ef_ga)');
+    } else {
+      ng.append('circle').attr('r',r)
+        .attr('fill',isCenter?'rgba(255,255,255,0.09)':nd.type==='cluster'?'rgba(255,255,255,0.07)':'rgba(255,255,255,0.05)')
+        .attr('stroke',isCenter?'#C9A84C':TC[nd.type]||'#fff')
+        .attr('stroke-width',isCenter?2.5:nd.type==='cluster'?2:1)
+        .attr('filter',isCenter?'url(#ef_gg)':nd.id==='cl_nut'?'url(#ef_gn)':nd.id==='cl_wsh'?'url(#ef_gw)':nd.id==='cl_hlt'?'url(#ef_gh)':nd.id==='cl_food'?'url(#ef_gf)':null);
+    }
+    // moons
+    if(nd.sectors?.length>0){
+      moons(nd.sectors,r).forEach(m=>{ng.append('circle').attr('cx',m.x).attr('cy',m.y).attr('r',m.r).attr('fill',m.color).attr('opacity',0.9).attr('pointer-events','none');});
+    }
+    // label — inside node
+    ng.append('text').attr('text-anchor','middle').attr('dominant-baseline','central').attr('y',-1)
+      .attr('font-size',isCenter?10:nd.type==='cluster'?9.5:8.5)
+      .attr('font-weight',isCenter||nd.type==='cluster'?'500':'400')
+      .attr('font-family','Inter,sans-serif')
+      .attr('fill',isCenter?'#fff':nd.type==='cluster'?'rgba(255,255,255,0.92)':'rgba(255,255,255,0.75)')
+      .attr('pointer-events','none')
+      .text(nd.name.length>14?nd.name.split(' ').slice(0,2).join(' '):nd.name);
+    // score badge (not center, not cluster, not abc)
+    if(!isCenter&&nd.type!=='cluster'&&nd.type!=='abc'){
+      ng.append('circle').attr('cx',r*0.72).attr('cy',-r*0.72).attr('r',7.5).attr('fill',ss(nd.score)).attr('stroke','#080c11').attr('stroke-width',1.5).attr('pointer-events','none');
+      ng.append('text').attr('x',r*0.72).attr('y',-r*0.72).attr('text-anchor','middle').attr('dominant-baseline','central').attr('font-size',6.5).attr('font-weight','500').attr('font-family','IBM Plex Mono,monospace').attr('fill','#fff').attr('pointer-events','none').text(nd.score);
+    }
+    // type label below node (not center)
+    if(!isCenter){
+      ng.append('text').attr('text-anchor','middle').attr('y',r+14)
+        .attr('font-size',8).attr('font-family','IBM Plex Mono,monospace')
+        .attr('fill',TC[nd.type]||'rgba(255,255,255,0.3)').attr('opacity',0.55).attr('pointer-events','none')
+        .text(TL[nd.type]||'');
+    }
+    // fade in
+    ng.transition().duration(350).delay(isCenter?0:150).style('opacity',1);
+    return ng;
+  }
+
+  const nodesG=g.append('g');
+  // draw neighbors first (so center is on top)
+  neighbors.forEach(nd=>{
+    const ng=drawNode(nodesG,nd,false);
+    // click neighbor → focus that node
+    ng.on('click',(e)=>{e.stopPropagation();focusNode(nd.id);});
+    // hover
+    const tip=document.getElementById('tooltip');
+    ng.on('mouseover',(e)=>{
+      tip.innerHTML=`<strong>${nd.name}</strong><br>${TL[nd.type]}${nd.staff?' · '+nd.staff+' staff':''}<br><span style="color:rgba(255,255,255,0.3)">${(NBR.get(nd.id)||new Set()).size} total connections</span>`;
+      tip.style.display='block';
+    }).on('mousemove',e=>{tip.style.left=(e.clientX+14)+'px';tip.style.top=(e.clientY+14)+'px';}).on('mouseout',()=>{tip.style.display='none';});
+  });
+  // center node
+  drawNode(nodesG,center,true);
+
+  // click background → reset
+  svg.on('click',()=>resetView());
+
+  // reset zoom state so resetView re-renders cleanly
+  zB=d3.zoom().scaleExtent([0.3,3]).on('zoom',e=>g.attr('transform',e.transform));
+  svg.call(zB);
+  svgR=svg;
+
+  document.getElementById('t-ctx').textContent=`// ${center.name.toUpperCase()}`;
+}
+function resetView(){
+  focusedId=null;
+  document.getElementById('t-reset').classList.remove('visible');
+  document.getElementById('sidebar').classList.remove('open');
+  document.getElementById('tooltip').style.display='none';
+  document.getElementById('t-ctx').textContent='// SOMALI REGION · ETHIOPIA · 2025';
+  render();
+}
+
+function openSidebar(id){
+  const d=NODES.find(n=>n.id===id);if(!d)return;
+  const sb=document.getElementById('sidebar');sb.classList.add('open');
+  const tc=TC[d.type]||'#fff';
+  const badge=document.getElementById('sb-badge');
+  badge.textContent=TL[d.type];
+  badge.style.cssText=`color:${tc};background:${tc}18;border:0.5px solid ${tc}33;`;
+  document.getElementById('sb-name').textContent=d.name;
+  const pill=document.getElementById('sb-pill');
+  if(d.type==='abc'){pill.textContent='Zone coordination gap';pill.style.cssText='background:rgba(239,68,68,0.1);color:#ef4444;border:1px solid rgba(239,68,68,0.25);font-family:IBM Plex Mono,monospace;font-size:9px;font-weight:500;padding:2px 8px;';}
+  else{const c=ss(d.score);pill.textContent=d.score+' / 100';pill.style.cssText=`background:${c}18;color:${c};border:1px solid ${c}33;font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:500;padding:2px 8px;`;}
+
+  let h='';
+  // Role in system
+  h+=`<div class="sb-sec"><div class="sb-lbl">// role in system</div><div class="sb-role-desc">${TD[d.type]}</div></div>`;
+  // Sectors
+  if(d.sectors?.length) h+=`<div class="sb-sec"><div class="sb-lbl">// sectors covered</div><div class="sb-moons">${d.sectors.map(s=>`<div class="sb-moon"><div class="sb-moon-dot" style="background:${SC[s]||'#888'}"></div><span class="sb-moon-lbl">${s}</span></div>`).join('')}</div></div>`;
+  // Zones + staff
+  if(d.zones?.length||d.staff){
+    h+=`<div class="sb-sec"><div class="sb-lbl">// operational footprint</div><div class="sb-kv">`;
+    if(d.zones?.length) h+=`<div class="sb-kvrow"><div class="sb-kvk">Zones</div><div class="sb-zones">${d.zones.map(z=>`<div class="sb-zone">${z}</div>`).join('')}</div></div>`;
+    if(d.staff) h+=`<div class="sb-kvrow" style="margin-top:5px"><div class="sb-kvk">Staff (est.)</div><div class="sb-kvv gold">${d.staff}</div></div>`;
+    h+=`</div></div>`;
+  }
+  // Projects / Funded projects
+  if(d.type==='donor'&&d.funded_projects?.length){
+    h+=`<div class="sb-sec"><div class="sb-lbl">// funded on zone</div><div class="sb-projects">${d.funded_projects.map(p=>`<div class="sb-project" style="border-left-color:${TC.ingo}"><div class="sb-pname">${p.org} — ${p.project}</div><div class="sb-pmeta">${p.amount} · ${p.sectors.join(', ')}</div></div>`).join('')}</div></div>`;
+  } else if(d.projects?.length){
+    h+=`<div class="sb-sec"><div class="sb-lbl">// active projects</div><div class="sb-projects">${d.projects.map(p=>`<div class="sb-project" style="border-left-color:${tc}"><div class="sb-pname">${p.name}</div><div class="sb-pmeta">${p.funder} · ${p.sectors.join(', ')}</div><div class="sb-pmeta" style="margin-top:2px;color:rgba(255,255,255,0.18)">${p.desc}</div></div>`).join('')}</div></div>`;
+  }
+  // Cluster members
+  if(d.type==='cluster'&&d.members){
+    const{un=[],ingo=[],nngo=[]}=d.members;
+    let mh='';
+    if(un.length) mh+=`<div class="sb-pgroup"><div class="sb-pgroup-lbl">UN agencies (co-leads / pipeline)</div>${un.map(mid=>{const mn=NODES.find(n=>n.id===mid);return mn?`<div class="sb-prow"><div class="sb-pdot" style="background:${TC.un}"></div><span class="sb-pname2">${mn.name}</span><span class="sb-prole">co-lead</span></div>`:''}).join('')}</div>`;
+    if(ingo.length) mh+=`<div class="sb-pgroup"><div class="sb-pgroup-lbl">INGO implementing partners</div>${ingo.map(mid=>{const mn=NODES.find(n=>n.id===mid);return mn?`<div class="sb-prow"><div class="sb-pdot" style="background:${TC.ingo}"></div><span class="sb-pname2">${mn.name}</span><span class="sb-prole">implementing</span></div>`:''}).join('')}</div>`;
+    if(nngo.length) mh+=`<div class="sb-pgroup"><div class="sb-pgroup-lbl">Local / NNGO sub-partners</div>${nngo.map(mid=>{const mn=NODES.find(n=>n.id===mid);return mn?`<div class="sb-prow"><div class="sb-pdot" style="background:${TC.nngo}"></div><span class="sb-pname2">${mn.name}</span><span class="sb-prole">sub-partner / direct</span></div>`:''}).join('')}</div>`;
+    if(mh) h+=`<div class="sb-sec"><div class="sb-lbl">// members by type</div><div class="sb-partners">${mh}</div></div>`;
+    if(d.gaps?.length) h+=`<div class="sb-sec"><div class="sb-lbl">// coordination gaps</div>${d.gaps.map(g=>`<div class="sb-gap"><div class="sb-gap-lbl">⚠ Gap</div><div class="sb-gap-text">${g}</div></div>`).join('')}</div>`;
+  }
+  // INGO partnerships
+  if(d.type==='ingo'){
+    const consIds=ALL_LINKS.filter(l=>(l.source===id||l.target===id)&&l.type==='consortium').map(l=>l.source===id?l.target:l.source);
+    const subP=d.sub_partners||[];
+    if(consIds.length||subP.length){
+      let ph='';
+      if(consIds.length) ph+=`<div class="sb-pgroup"><div class="sb-pgroup-lbl">ET-RRM consortium members</div>${consIds.map(mid=>{const mn=NODES.find(n=>n.id===mid);return mn?`<div class="sb-prow"><div class="sb-pdot" style="background:${TC[mn.type]||'#fff'}"></div><span class="sb-pname2">${mn.name}</span><span class="sb-prole">${mn.type}</span></div>`:''}).join('')}</div>`;
+      if(subP.length) ph+=`<div class="sb-pgroup"><div class="sb-pgroup-lbl">NNGO sub-partners (financed)</div>${subP.map(mid=>{const mn=NODES.find(n=>n.id===mid);return mn?`<div class="sb-prow"><div class="sb-pdot" style="background:${TC.nngo}"></div><span class="sb-pname2">${mn.name}</span><span class="sb-prole">sub-grant</span></div>`:''}).join('')}</div>`;
+      h+=`<div class="sb-sec"><div class="sb-lbl">// partnerships & sub-granting</div><div class="sb-partners">${ph}</div></div>`;
+    }
+  }
+  // ABC actors
+  if(d.type==='abc'){
+    const bridged=(d.links||[]).filter(l=>l.t==='a').map(l=>NODES.find(n=>n.id===l.to)).filter(Boolean);
+    if(bridged.length) h+=`<div class="sb-sec"><div class="sb-lbl">// actors present — no mechanism</div><div class="sb-partners">${bridged.map(b=>`<div class="sb-prow"><div class="sb-pdot" style="background:${TC[b.type]||'#fff'}"></div><span class="sb-pname2">${b.name}</span><span class="sb-prole">${TL[b.type]}</span></div>`).join('')}</div></div>`;
+    h+=`<div class="sb-sec"><div class="sb-lbl">// coordination gap</div><div class="sb-gap"><div class="sb-gap-lbl">Missing mechanism</div><div class="sb-gap-text">${d.note}</div></div></div>`;
+  }
+  // Contacts
+  if(d.contacts?.length) h+=`<div class="sb-sec"><div class="sb-lbl">// contacts</div><div class="sb-contacts">${d.contacts.map(c=>`<div><div class="sb-cname">${c.name}</div><div class="sb-crole">${c.role}</div><div class="sb-cemail">${c.email}</div></div>`).join('')}</div></div>`;
+  // Field note (non-ABC)
+  if(d.note&&d.type!=='abc') h+=`<div class="sb-sec"><div class="sb-lbl">// field note</div><div class="sb-note">${d.note}</div></div>`;
+
+  document.getElementById('sb-body').innerHTML=h;
+  document.getElementById('t-ctx').textContent=`// ${d.name.toUpperCase()}`;
+}
+
+// ═══════════════════════════ TOUR — 8 steps ═══════════════════════════
+const TOUR=[
+  {title:'Rhizome — the humanitarian actor landscape',
+   text:'<span class="hl">Rhizome</span> maps every humanitarian actor active in Somali Region, Ethiopia in 2025 — their type, sector coverage, funding relationships, consortium membership, active projects, and coordination gaps. Every node is grounded in the real system. This is what the coordination architecture looks like from inside.',
+   action:()=>resetView()},
+  {title:'Five zones — why each actor is placed here',
+   text:'Position is not random. <span class="hl">Government</span> (top-left) provides state authorization and co-leads clusters. <span class="hl">UN Agencies</span> (top-centre) lead clusters, manage supply pipelines, and act as provider of last resort. <span class="hl">Donors</span> (top-right) fund implementing partners. <span class="hl">INGOs</span> (bottom-left) implement directly and lead consortiums. <span class="hl">CSO/NNGOs</span> (bottom-right) provide last-mile access as sub-partners or EHF direct recipients.',
+   action:()=>resetView()},
+  {title:'Sector moons — what each actor covers',
+   text:'The coloured dots orbiting each node are <span class="hl">sector moons</span>. One glance tells you which sectors an actor covers. An actor with five moons is multi-sectoral — one moon means it is sector-specific. Hover any node to reveal its network and connection types.',
+   action:()=>resetView()},
+  {title:'The Nutrition Cluster — a unique co-leadership model',
+   text:'The <span class="hl">Nutrition Cluster</span> is co-led by UNICEF and EDRMC/ENCU — the Government\'s Emergency Nutrition Coordination Unit. This is unique to Ethiopia. The cluster\'s profile shows its members by type: UN agencies, INGO implementing partners, and NNGO sub-partners. A 2-month RUTF pipeline break in early 2025 exposed the fragility of this system.',
+   action:()=>setTimeout(()=>focusNode('cl_nut'),400)},
+  {title:'The ET-RRM consortium — IRC leads 13 NGOs',
+   text:'The <span class="hl">Ethiopia Rapid Response Mechanism</span> is a 13-NGO consortium led by IRC, funded by EU/ECHO, Irish Aid and FCDO since November 2024. It responded to 48 of 60 emergency alerts in year 1. IRC, ACF, NRC, Save the Children, Concern and DRC are all members. Click IRC to see the consortium links, sub-partners financed, and active projects.',
+   action:()=>setTimeout(()=>focusNode('irc'),400)},
+  {title:'Donors — funding flows on zone',
+   text:'<span class="hl">Donor nodes</span> show which organizations they fund, which projects, and the amounts. Click EU/ECHO to see its full portfolio on zone. Then click EHF — OCHA\'s pooled fund prioritizes direct funding to local NGOs: ADO Ethiopia, HSO Ethiopia and DDO Somali are all EHF direct recipients visible in the NNGO zone.',
+   action:()=>setTimeout(()=>focusNode('echo'),400)},
+  {title:'Local actors — EHF direct recipients',
+   text:'In the <span class="hl">CSO/NNGO zone</span>, local organizations like ADO Ethiopia and HSO Ethiopia receive EHF funding directly — 40% of EHF 2024 went to local/national actors. They operate where INGO access is restricted. Click ADO to see its sub-grant relationship with ACF on CMAM, its field project, and the woredas it covers.',
+   action:()=>setTimeout(()=>focusNode('ado'),400)},
+  {title:'ABC layer — coordination gaps made visible',
+   text:'The <span class="hl">ABC layer</span> (Area-Based Coordination) reveals zones where actors are co-present with zero inter-cluster mechanism. Red diamonds appear. Hover <span class="hl">Dollo Ado</span> — MSF, NRC, DRC, UNHCR and IOM are all on the same sites. No shared forum. Click any ABC node to see exactly which actors are present and what mechanism is missing.',
+   action:()=>{abcVisible=true;d3.selectAll('g.ag').transition().duration(500).style('opacity',1);resetView();}},
+];
+
+let _ts=0;
+function tourR(){
+  const s=TOUR[_ts];
+  document.getElementById('tc-step').textContent='Step '+(_ts+1)+' of '+TOUR.length;
+  document.getElementById('tc-title').textContent=s.title;
+  document.getElementById('tc-text').innerHTML=s.text;
+  document.getElementById('tc-ctr').textContent=(_ts+1)+' / '+TOUR.length;
+  const dots=document.getElementById('tc-dots');dots.innerHTML='';
+  TOUR.forEach((_,i)=>{const dot=document.createElement('div');dot.className='tcdot'+(i===_ts?' active':i<_ts?' done':'');dot.onclick=()=>tourGo(i);dots.appendChild(dot);});
+  const prev=document.getElementById('tc-prev');prev.style.opacity=_ts===0?'0.25':'1';prev.style.pointerEvents=_ts===0?'none':'auto';
+  const next=document.getElementById('tc-next');
+  if(_ts===TOUR.length-1){next.textContent='Access the tool →';next.className='tc-btn unlock';next.onclick=()=>{document.getElementById('tour-overlay').style.display='none';resetView();};}
+  else{next.textContent='Next →';next.className='tc-btn primary';next.onclick=tourNext;}
+  if(s.action) s.action();
+}
+function tourGo(i){_ts=Math.max(0,Math.min(TOUR.length-1,i));tourR();}
+function tourNext(){tourGo(_ts+1);}
+function tourPrev(){tourGo(_ts-1);}
+
+render();
+tourR();
+window.addEventListener('resize',()=>{if(!focusedId)render();});
+</script>
+</body>
+</html>
