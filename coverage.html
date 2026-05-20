@@ -266,14 +266,21 @@ body{font-family:var(--sans);background:var(--parch);color:var(--ink);-webkit-fo
   <!-- MAP LEGEND -->
   <div class="map-legend">
     <div class="ml-title">Coverage</div>
-    <div class="ml-row"><div class="ml-sw" style="background:rgba(34,197,94,.65)"></div><span class="ml-lbl">3+ sectors</span></div>
-    <div class="ml-row"><div class="ml-sw" style="background:rgba(250,204,21,.65)"></div><span class="ml-lbl">2 sectors</span></div>
-    <div class="ml-row"><div class="ml-sw" style="background:rgba(251,146,60,.65)"></div><span class="ml-lbl">1 sector</span></div>
+    <div class="ml-row"><div class="ml-sw" style="background:rgba(21,128,61,.85)"></div><span class="ml-lbl">5–6 sectors</span></div>
+    <div class="ml-row"><div class="ml-sw" style="background:rgba(34,197,94,.72)"></div><span class="ml-lbl">3–4 sectors</span></div>
+    <div class="ml-row"><div class="ml-sw" style="background:rgba(250,204,21,.72)"></div><span class="ml-lbl">2 sectors</span></div>
+    <div class="ml-row"><div class="ml-sw" style="background:rgba(251,146,60,.72)"></div><span class="ml-lbl">1 sector</span></div>
     <div class="ml-row"><div class="ml-sw" style="background:rgba(200,200,200,.55)"></div><span class="ml-lbl">Not covered</span></div>
     <div style="border-top:1px solid #eee;margin-top:5px;padding-top:5px">
       <div class="ml-title">Activities</div>
       <div class="ml-row"><div style="width:9px;height:9px;border-radius:50%;background:#888;flex-shrink:0"></div><span class="ml-lbl">Implemented</span></div>
       <div class="ml-row"><div style="width:9px;height:9px;border-radius:50%;border:1.5px dashed #C9A84C;flex-shrink:0"></div><span class="ml-lbl">Planned</span></div>
+      <div style="margin-top:5px;border-top:1px solid #eee;padding-top:5px">
+        <div class="ml-title">Admin limits</div>
+        <div class="ml-row"><div style="width:13px;height:2px;background:#dc2626;flex-shrink:0"></div><span class="ml-lbl">Region</span></div>
+        <div class="ml-row"><div style="width:13px;height:1.5px;background:#374151;flex-shrink:0"></div><span class="ml-lbl">Zone</span></div>
+        <div class="ml-row"><div style="width:13px;height:1px;background:#6b7280;flex-shrink:0"></div><span class="ml-lbl">Woreda</span></div>
+      </div>
     </div>
   </div>
 
@@ -612,7 +619,7 @@ function initMap(){
     attribution:'&copy; OpenStreetMap',maxZoom:14
   }).addTo(map);
 
-  // Polygons for woredas that have them
+  // Polygons for woredas that have them (fill layer — coverage choropleth)
   GEODATA.features.forEach(f=>{
     const name=f.properties.name;
     const layer=L.geoJSON(f,{style:()=>getMapStyle(name)}).addTo(map);
@@ -622,9 +629,9 @@ function initMap(){
     geoLayers[name]=layer;
   });
 
-  // Circle markers for all woredas (including those with polygons — circles sit on top fine)
+  // Circle markers for all woredas without polygons
   WOREDAS.forEach(w=>{
-    if(geoLayers[w.name]) return; // already has polygon
+    if(geoLayers[w.name]) return;
     const c=getMapColor(w.name);
     const circ=L.circleMarker([w.lat,w.lon],{radius:13,fillColor:c.fill,color:c.stroke,weight:1.5,fillOpacity:0.85});
     circ.on('click',()=>selectWoreda(w.name));
@@ -642,6 +649,30 @@ function initMap(){
     showCoverageOnHover:false,
   });
   map.addLayer(clusterGroup);
+
+  // ── ADM BOUNDARY OVERLAYS ──────────────────────
+  // Load adm1/2/3 GeoJSON from the geo/ folder, filter to BG region (ET06)
+  Promise.all([
+    fetch('geo/adm1_ethiopia.geojson').then(r=>r.json()),
+    fetch('geo/adm2_ethiopia.geojson').then(r=>r.json()),
+    fetch('geo/adm3_ethiopia.geojson').then(r=>r.json()),
+  ]).then(([adm1,adm2,adm3])=>{
+    // Woreda mesh (adm3) — thin grey, BG only
+    L.geoJSON(adm3,{
+      filter:f=>(f.properties.adm3_pcode||'').startsWith('ET06'),
+      style:{color:'#6b7280',weight:0.7,opacity:0.55,fillOpacity:0,interactive:false},
+    }).addTo(map);
+    // Zone boundaries (adm2) — medium dark
+    L.geoJSON(adm2,{
+      filter:f=>(f.properties.adm2_pcode||'').startsWith('ET06'),
+      style:{color:'#374151',weight:1.6,opacity:0.75,fillOpacity:0,interactive:false},
+    }).addTo(map);
+    // Region boundary (adm1) — thick red
+    L.geoJSON(adm1,{
+      filter:f=>(f.properties.adm1_pcode||'').startsWith('ET06'),
+      style:{color:'#dc2626',weight:2.5,opacity:0.9,fillOpacity:0,interactive:false},
+    }).addTo(map);
+  }).catch(e=>console.warn('ADM boundary load failed:',e));
 }
 
 function clusterIcon(cluster){
@@ -680,31 +711,39 @@ function makeActivityMarker(act){
 
 function rebuildActivityMarkers(){
   clusterGroup.clearLayers();
+  // Only activities whose month is in activeMonths
   getFilteredActivities().forEach(a=>clusterGroup.addLayer(makeActivityMarker(a)));
 }
 
 // ═══════════════════════════════════════════════
-// MAP STYLE
+// MAP STYLE — 5-tier multi-sector coverage
 // ═══════════════════════════════════════════════
 function getMapColor(name){
   const n=getSectorCount(name);
   if(n===0) return {fill:'rgba(200,200,200,.55)',stroke:'#aaa'};
-  if(n===1) return {fill:'rgba(251,146,60,.65)',stroke:'#f97316'};
-  if(n===2) return {fill:'rgba(250,204,21,.65)',stroke:'#eab308'};
-  return {fill:'rgba(34,197,94,.65)',stroke:'#16a34a'};
+  if(n===1) return {fill:'rgba(251,146,60,.72)',stroke:'#f97316'};
+  if(n===2) return {fill:'rgba(250,204,21,.72)',stroke:'#eab308'};
+  if(n<=4)  return {fill:'rgba(34,197,94,.72)',stroke:'#16a34a'};
+  // 5-6 sectors — deep saturated green (max multi-sector)
+  return {fill:'rgba(21,128,61,.88)',stroke:'#166534'};
 }
 function getMapStyle(name){
   const c=getMapColor(name);
+  const n=getSectorCount(name);
   const sel=selectedWoreda===name;
-  return {fillColor:c.fill,color:sel?'#C9A84C':c.stroke,weight:sel?3:1.5,fillOpacity:.85};
+  // fillOpacity scales with sector count for visual depth
+  const fo=n>=5?0.92:n>=3?0.80:0.72;
+  return {fillColor:c.fill,color:sel?'#C9A84C':c.stroke,weight:sel?3:1.5,fillOpacity:fo,opacity:0.9};
 }
 function updateMapColors(){
   Object.entries(geoLayers).forEach(([name,layer])=>{
     if(layer.setStyle) layer.setStyle(getMapStyle(name));
-    else if(layer.setRadius){
+    else{
       const c=getMapColor(name);
+      const n=getSectorCount(name);
       const sel=selectedWoreda===name;
-      layer.setStyle({fillColor:c.fill,color:sel?'#C9A84C':c.stroke,weight:sel?3:1.5,fillOpacity:.85});
+      const fo=n>=5?0.92:n>=3?0.80:0.72;
+      layer.setStyle({fillColor:c.fill,color:sel?'#C9A84C':c.stroke,weight:sel?3:1.5,fillOpacity:fo,opacity:0.9});
     }
   });
 }
@@ -714,7 +753,9 @@ let _tt=null,_ttMove=null;
 function showTT(e,name){
   if(!_tt){_tt=document.createElement('div');_tt.style.cssText='position:fixed;background:rgba(0,0,0,.82);color:#fff;padding:6px 10px;font-family:IBM Plex Mono,monospace;font-size:10px;pointer-events:none;z-index:4000;border-left:2px solid #C9A84C;line-height:1.5;';document.body.appendChild(_tt);}
   const w=WOREDAS.find(x=>x.name===name);
-  _tt.innerHTML=`<strong>${name}</strong><br>${w?w.zone+' Zone':''}<br>${getSectorCount(name)} sector(s) covered`;
+  const n=getSectorCount(name);
+  const secs=Object.keys(getWoredaCoverage(name));
+  _tt.innerHTML=`<strong>${name}</strong><br>${w?w.zone+' Zone':''}<br><span style="color:${n>=5?'#22c55e':n>=3?'#86efac':n===2?'#fde047':n===1?'#fb923c':'#aaa'}">${n} sector${n!==1?'s':''} covered</span>${secs.length?'<br><span style="font-size:8.5px;color:#aaa">'+secs.join(' · ')+'</span>':''}`;
   _tt.style.display='block';
   _ttMove=ev=>{_tt.style.left=(ev.clientX+14)+'px';_tt.style.top=(ev.clientY+14)+'px';};
   document.addEventListener('mousemove',_ttMove);
@@ -753,6 +794,7 @@ function toggleMonth(key){
   activeMonths.has(key)?activeMonths.delete(key):activeMonths.add(key);
   renderMonthBlock();
   renderDpMonthChips();
+  // Markers rebuild: only activities in activeMonths
   rebuildActivityMarkers();
   if(selectedWoreda) renderDpActivities(selectedWoreda);
 }
@@ -772,6 +814,8 @@ function getWoredaCoverage(name){
   return cov;
 }
 function getSectorCount(name){return Object.keys(getWoredaCoverage(name)).length;}
+
+// Activities strictly filtered by activeMonths
 function getFilteredActivities(woredaFilter){
   return ACTIVITIES.filter(a=>{
     if(!activeMonths.has(a.month)) return false;
@@ -827,10 +871,12 @@ function renderWoredaList(){
     const cov=getWoredaCoverage(w.name);const n=Object.keys(cov).length;
     const isSel=selectedWoreda===w.name;const isGap=n===0;
     const dots=ALL_SECTORS.filter(s=>activeSectors.has(s)).map(s=>`<div class="sdot${cov[s]?'':' empty'}" style="${cov[s]?'background:'+SECTOR_COLOR[s]:''}" title="${s}"></div>`).join('');
+    // Multi-sector badge for 5-6 sectors
+    const multiBadge=n>=5?`<span style="font-family:var(--mono);font-size:7px;color:#166534;background:#dcfce7;padding:1px 4px;border-radius:1px;flex-shrink:0">${n}S</span>`:'';
     return `<div class="wi${isSel?' selected':''}${isGap?' gap':''}" onclick="selectWoreda('${w.name.replace(/'/g,"\\'")}')">
       <div class="wi-dots">${dots}</div>
-      <div><div class="wi-name">${w.name}</div><span class="wi-zone">${w.zone}</span></div>
-      ${isGap?'<div class="gap-badge">GAP</div>':''}
+      <div style="flex:1;min-width:0"><div class="wi-name">${w.name}</div><span class="wi-zone">${w.zone}</span></div>
+      ${isGap?'<div class="gap-badge">GAP</div>':multiBadge}
     </div>`;
   }).join('');
 }
@@ -844,7 +890,6 @@ function renderDpMonthChips(){
 
 function selectWoreda(name){
   selectedWoreda=name;
-  // sync dropdown
   const wd=document.getElementById('sel-woreda');
   if(wd.querySelector(`option[value="${name}"]`)) wd.value=name;
   updateMapColors();
@@ -865,13 +910,14 @@ function openDetail(name){
 }
 
 function renderDpActivities(name){
+  // Strictly filter by activeMonths
   const acts=getFilteredActivities(name).sort((a,b)=>{
     if(a.future!==b.future) return a.future?1:-1;
     return b.month.localeCompare(a.month);
   });
   const tbody=document.getElementById('dp-act-tbody');
   if(!acts.length){
-    tbody.innerHTML=`<tr><td colspan="5"><div class="dp-empty">No activities match current filters for this woreda.</div></td></tr>`;
+    tbody.innerHTML=`<tr><td colspan="5"><div class="dp-empty">No activities match current period filters for this woreda.</div></td></tr>`;
     return;
   }
   tbody.innerHTML=acts.map(a=>{
@@ -889,11 +935,14 @@ function renderDpActivities(name){
 
 function renderDpCoverage(name){
   const cov=getWoredaCoverage(name);
-  document.getElementById('dp-cov-content').innerHTML=ALL_SECTORS.filter(s=>activeSectors.has(s)).map(s=>{
+  const n=Object.keys(cov).length;
+  // Header with multi-sector score
+  const scoreHtml=n>=3?`<div style="font-family:var(--mono);font-size:9px;color:${n>=5?'#166534':'#16a34a'};background:${n>=5?'#dcfce7':'#f0fdf4'};padding:3px 10px;margin:0 16px 10px;border-left:3px solid ${n>=5?'#166534':'#16a34a'}">${n} sectors covered — ${n>=5?'Full multi-sector response':'Multi-sector response'}</div>`:'';
+  document.getElementById('dp-cov-content').innerHTML=scoreHtml+`<div style="display:grid;grid-template-columns:repeat(2,1fr);gap:8px;padding:0 16px 12px">`+ALL_SECTORS.filter(s=>activeSectors.has(s)).map(s=>{
     const actors=cov[s];const col=SECTOR_COLOR[s];
     if(!actors||!actors.length) return `<div class="dp-sec-block"><div class="dp-sec-hdr"><div class="dp-sec-dot" style="background:${col};opacity:.3"></div><div class="dp-sec-name" style="color:#ccc">${s}</div></div><div class="dp-sec-gap">No coverage</div></div>`;
     return `<div class="dp-sec-block" style="border-left:3px solid ${col}"><div class="dp-sec-hdr"><div class="dp-sec-dot" style="background:${col}"></div><div class="dp-sec-name" style="color:${col}">${s}</div></div>${actors.map(a=>`<div class="dp-org-row"><span class="dp-org-name">${a.org}</span><span class="dp-org-type">${a.type}</span><span class="dp-org-reach">${a.reach.toLocaleString()}</span></div>`).join('')}</div>`;
-  }).join('');
+  }).join('')+`</div>`;
 }
 
 function closeDetail(){
@@ -923,7 +972,6 @@ function refresh(){
   updateMapColors();
   rebuildActivityMarkers();
   if(selectedWoreda){renderDpActivities(selectedWoreda);renderDpCoverage(selectedWoreda);}
-  // update topbar context
   const suffix=filterZone?('· '+filterZone.toUpperCase()):'· 2025-Q4';
   document.getElementById('t-ctx').textContent=`// BENISHANGUL-GUMUZ · 6 SECTORS ${suffix}`;
 }
@@ -934,17 +982,17 @@ function refresh(){
 const TOUR=[
   {
     title:'Coverage — who does what where',
-    text:'Each woreda is coloured by the number of sectors covered. <span class="tc-hl">Green = 3+ sectors</span>, yellow = 2, orange = 1, <span class="tc-hl">grey = no organisation present</span>. Filter by sector and actor type to isolate gaps. The woreda list on the right is sorted alphabetically.',
+    text:'Each woreda is coloured by the number of sectors covered. <span class="tc-hl">Deep green = 5–6 sectors</span>, light green = 3–4, yellow = 2, orange = 1, <span class="tc-hl">grey = no organisation present</span>. Administrative boundaries (region in red, zones in dark grey, woredas in light grey) are now displayed as overlays.',
     action:()=>{closeDetail();map.setView([10.2,35.5],8,{animate:true});}
   },
   {
-    title:'Activity markers — implemented and planned',
-    text:'Coloured dots on the map are activities. <span class="tc-hl">Solid dot = implemented</span>. <span class="tc-hl">Dashed dot = planned</span>. Dots cluster at zoom-out — click any cluster to expand. Use the Period filter in the sidebar to show specific months or the planned period.',
+    title:'Activity markers — current period only',
+    text:'Coloured dots show activities for the <span class="tc-hl">selected period only</span>. Solid = implemented, dashed = planned. Use the Period filter to change the month selection — the markers update instantly to reflect only what is active in those months.',
     action:()=>{closeDetail();}
   },
   {
     title:'Zone and woreda filters',
-    text:'The <span class="tc-hl">Zone</span> dropdown filters both the map and the woreda list to a single administrative zone. The <span class="tc-hl">Woreda</span> dropdown then cascades — select a woreda directly and the detail panel opens automatically.',
+    text:'The <span class="tc-hl">Zone</span> dropdown filters both the map and the woreda list. The <span class="tc-hl">Woreda</span> dropdown cascades — select a woreda directly and the detail panel opens automatically.',
     action:()=>{
       document.getElementById('sel-zone').value='Assosa';
       onZoneChange();
@@ -953,7 +1001,7 @@ const TOUR=[
   },
   {
     title:'Woreda detail panel — activities first',
-    text:'Click any woreda on the map or in the list. The panel opens on <span class="tc-hl">Activities by default</span> — every implemented and planned activity for that woreda, filtered by your current period selection. Switch to the Coverage tab to see all organisations present per sector.',
+    text:'Click any woreda. The panel opens on <span class="tc-hl">Activities by default</span>, filtered by your current period selection. Switch to the Coverage tab to see all organisations per sector, and the multi-sector score for that woreda.',
     action:()=>{
       document.getElementById('sel-zone').value='';onZoneChange();
       setTimeout(()=>selectWoreda('Bambasi'),400);
@@ -961,7 +1009,7 @@ const TOUR=[
   },
   {
     title:'Build your coordination brief',
-    text:'Combine the filters — sector, actor type, zone, period — to answer the question your cluster meeting needs answered: <span class="tc-hl">who is planning what in June, and which woredas have nothing planned?</span> Every combination updates the map, the list, and the woreda profiles in real time.',
+    text:'Combine filters to answer your cluster question: <span class="tc-hl">who is planning what in June, and which woredas have nothing planned?</span> Every combination updates the map, the list, and the woreda profiles in real time.',
     action:()=>{
       closeDetail();
       document.getElementById('sel-zone').value='';
@@ -990,7 +1038,6 @@ function tourGo(i){_ts=Math.max(0,Math.min(TOUR.length-1,i));tourRender();}
 function tourNext(){tourGo(_ts+1);}
 function tourPrev(){tourGo(_ts-1);}
 function tourUnlock(){
-  // Reset to general view before unlocking
   closeDetail();
   document.getElementById('sel-zone').value='';
   onZoneChange();
@@ -1003,7 +1050,7 @@ function tourUnlock(){
 // ═══════════════════════════════════════════════
 initMap();
 buildZoneDropdown();
-onZoneChange(); // populate woreda dropdown with all woredas
+onZoneChange();
 renderMonthBlock();
 refresh();
 tourRender();
