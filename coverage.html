@@ -619,29 +619,16 @@ function initMap(){
     attribution:'&copy; OpenStreetMap',maxZoom:14
   }).addTo(map);
 
-  // Polygons for woredas that have them (fill layer — coverage choropleth)
-  GEODATA.features.forEach(f=>{
-    const name=f.properties.name;
-    const layer=L.geoJSON(f,{style:()=>getMapStyle(name)}).addTo(map);
-    layer.on('click',()=>selectWoreda(name));
-    layer.on('mouseover',e=>{e.target.setStyle({weight:2.5,color:'#333'});showTT(e.originalEvent,name);});
-    layer.on('mouseout',e=>{e.target.setStyle(getMapStyle(name));hideTT();});
-    geoLayers[name]=layer;
-  });
+  // ── PANES ──────────────────────────────────────
+  // 200: coverage choropleth fill (woreda polygons)
+  // 300: ADM2 zone borders (above fill)
+  // 350: ADM1 region border (top)
+  // 600: activity markers (Leaflet default markerPane)
+  map.createPane('coverageFill'); map.getPane('coverageFill').style.zIndex=200;
+  map.createPane('admZone');      map.getPane('admZone').style.zIndex=300;
+  map.createPane('admRegion');    map.getPane('admRegion').style.zIndex=350;
 
-  // Circle markers for all woredas without polygons
-  WOREDAS.forEach(w=>{
-    if(geoLayers[w.name]) return;
-    const c=getMapColor(w.name);
-    const circ=L.circleMarker([w.lat,w.lon],{radius:13,fillColor:c.fill,color:c.stroke,weight:1.5,fillOpacity:0.85});
-    circ.on('click',()=>selectWoreda(w.name));
-    circ.on('mouseover',e=>{showTT(e.originalEvent,w.name);});
-    circ.on('mouseout',()=>hideTT());
-    circ.addTo(map);
-    geoLayers[w.name]=circ;
-  });
-
-  // Cluster group for activity markers
+  // ── ACTIVITY CLUSTER ───────────────────────────
   clusterGroup=L.markerClusterGroup({
     maxClusterRadius:48,
     iconCreateFunction:clusterIcon,
@@ -650,28 +637,71 @@ function initMap(){
   });
   map.addLayer(clusterGroup);
 
-  // ── ADM BOUNDARY OVERLAYS ──────────────────────
-  // Load adm1/2/3 GeoJSON from the geo/ folder, filter to BG region (ET06)
+  // ── LOAD ALL ADM GeoJSON — one Promise ─────────
+  // adm3 = choropleth fill + woreda mesh lines
+  // adm2 = zone borders above fill
+  // adm1 = region border on top
   Promise.all([
     fetch('geo/adm1_ethiopia.geojson').then(r=>r.json()),
     fetch('geo/adm2_ethiopia.geojson').then(r=>r.json()),
     fetch('geo/adm3_ethiopia.geojson').then(r=>r.json()),
   ]).then(([adm1,adm2,adm3])=>{
-    // Woreda mesh (adm3) — thin grey, BG only
-    L.geoJSON(adm3,{
+
+    // Build a lookup: adm3_name (lowercase) → woreda name in WOREDAS array
+    // So we can color each polygon by its coverage score
+    function resolveWoredaName(props){
+      const raw=(props.adm3_name||props.name||'').toLowerCase().trim();
+      return WOREDAS.find(w=>w.name.toLowerCase()===raw)
+          || WOREDAS.find(w=>raw.includes(w.name.toLowerCase()))
+          || WOREDAS.find(w=>w.name.toLowerCase().includes(raw))
+          || null;
+    }
+
+    // ADM3 — coverage choropleth fill (z=200)
+    const adm3Layer = L.geoJSON(adm3,{
+      pane:'coverageFill',
       filter:f=>(f.properties.adm3_pcode||'').startsWith('ET06'),
-      style:{color:'#6b7280',weight:0.7,opacity:0.55,fillOpacity:0,interactive:false},
+      style:f=>{
+        const w=resolveWoredaName(f.properties);
+        const name=w?w.name:null;
+        if(!name) return {pane:'coverageFill',fillColor:'rgba(200,200,200,.45)',color:'#9ca3af',weight:0.5,fillOpacity:0.45,opacity:0.6};
+        return {...getMapStyle(name),pane:'coverageFill'};
+      },
+      onEachFeature:(f,layer)=>{
+        const w=resolveWoredaName(f.properties);
+        if(!w) return;
+        const name=w.name;
+        // store ref for updateMapColors
+        if(!geoLayers[name]) geoLayers[name]=layer;
+        layer.on('click',()=>selectWoreda(name));
+        layer.on('mouseover',e=>{
+          layer.setStyle({weight:2,color:'#333'});
+          showTT(e.originalEvent,name);
+        });
+        layer.on('mouseout',()=>{
+          layer.setStyle({...getMapStyle(name),pane:'coverageFill'});
+          hideTT();
+        });
+      }
     }).addTo(map);
-    // Zone boundaries (adm2) — medium dark
+
+    // Store the full adm3 layer so updateMapColors can reach it
+    window._adm3Layer = adm3Layer;
+
+    // ADM2 — zone borders (z=300, no fill, lines only)
     L.geoJSON(adm2,{
+      pane:'admZone',
       filter:f=>(f.properties.adm2_pcode||'').startsWith('ET06'),
-      style:{color:'#374151',weight:1.6,opacity:0.75,fillOpacity:0,interactive:false},
+      style:{pane:'admZone',color:'#1f2937',weight:2,opacity:0.8,fillOpacity:0,interactive:false},
     }).addTo(map);
-    // Region boundary (adm1) — thick red
+
+    // ADM1 — region border (z=350)
     L.geoJSON(adm1,{
+      pane:'admRegion',
       filter:f=>(f.properties.adm1_pcode||'').startsWith('ET06'),
-      style:{color:'#dc2626',weight:2.5,opacity:0.9,fillOpacity:0,interactive:false},
+      style:{pane:'admRegion',color:'#dc2626',weight:2.8,opacity:0.95,fillOpacity:0,interactive:false},
     }).addTo(map);
+
   }).catch(e=>console.warn('ADM boundary load failed:',e));
 }
 
@@ -736,16 +766,17 @@ function getMapStyle(name){
   return {fillColor:c.fill,color:sel?'#C9A84C':c.stroke,weight:sel?3:1.5,fillOpacity:fo,opacity:0.9};
 }
 function updateMapColors(){
+  // Update each individual polygon layer stored in geoLayers
   Object.entries(geoLayers).forEach(([name,layer])=>{
-    if(layer.setStyle) layer.setStyle(getMapStyle(name));
-    else{
-      const c=getMapColor(name);
-      const n=getSectorCount(name);
-      const sel=selectedWoreda===name;
-      const fo=n>=5?0.92:n>=3?0.80:0.72;
-      layer.setStyle({fillColor:c.fill,color:sel?'#C9A84C':c.stroke,weight:sel?3:1.5,fillOpacity:fo,opacity:0.9});
-    }
+    layer.setStyle({...getMapStyle(name),pane:'coverageFill'});
   });
+  // Also restyle any adm3 polygon not yet matched (shows grey)
+  if(window._adm3Layer){
+    window._adm3Layer.eachLayer(layer=>{
+      const w=layer._woredaName;
+      if(w) layer.setStyle({...getMapStyle(w),pane:'coverageFill'});
+    });
+  }
 }
 
 // tooltip
